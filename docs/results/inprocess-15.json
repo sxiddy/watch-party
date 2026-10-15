@@ -1,0 +1,27 @@
+{
+  "when": "2026-10-15T17:02:04.159Z",
+  "url": "in-process (127.0.0.1)",
+  "viewers": 15,
+  "actions": 300,
+  "fakeDelayMs": 0,
+  "fakeJitterMs": 0,
+  "samples": 4500,
+  "expected": 4500,
+  "hostActionsRejected": 0,
+  "p50": 1.29,
+  "p95": 2.2,
+  "p99": 2.68,
+  "max": 4.81,
+  "worstViewerP95": 2.41,
+  "concurrent": {
+    "rounds": 40,
+    "accepted": 40,
+    "rejectedAsConflict": 40,
+    "allViewersAgreeOnFinalVersion": true
+  },
+  "reconnect": {
+    "dropped": 5,
+    "cameBackWithCorrectState": 5
+  },
+  "node": "v24.19.0"
+}

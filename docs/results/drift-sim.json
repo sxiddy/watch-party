@@ -1,0 +1,32 @@
+[
+  {
+    "mode": "rate nudging + seek (HTML5 video)",
+    "players": 12,
+    "minutes": 20,
+    "samples": 280581,
+    "p50ms": 28.7,
+    "p95ms": 45.9,
+    "p99ms": 51,
+    "maxMs": 74.2,
+    "over500msPct": 0,
+    "inFlight": {
+      "p99ms": 51,
+      "maxMs": 74.2
+    }
+  },
+  {
+    "mode": "seek only (YouTube)",
+    "players": 12,
+    "minutes": 20,
+    "samples": 275282,
+    "p50ms": 141.6,
+    "p95ms": 283,
+    "p99ms": 298.6,
+    "maxMs": 415.5,
+    "over500msPct": 0,
+    "inFlight": {
+      "p99ms": 302.9,
+      "maxMs": 765.7
+    }
+  }
+]

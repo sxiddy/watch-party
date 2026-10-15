@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Back Row: watch movies together</title>
+  <meta name="description" content="Make a room, send the link, and watch a movie in sync with your friends.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23d9472b'/%3E%3Cpath d='M7 22h18M9 17h14M11 12h10' stroke='%23f1e9db' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ============ front door ============ -->
+<main id="landing" class="landing" hidden>
+  <header class="land-top">
+    <a class="wordmark" href="/">Back Row</a>
+    <span class="land-note">no sign-up, no install</span>
+  </header>
+
+  <section class="marquee-wrap">
+    <div class="marquee">
+      <div class="bulbs" aria-hidden="true"></div>
+      <p class="marquee-kicker">Now showing, wherever your friends are</p>
+      <h1 class="marquee-title">Movie night<br>for the group chat</h1>
+      <div class="bulbs" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="door">
+    <div class="door-card">
+      <label class="field">
+        <span>What should we call you?</span>
+        <input id="land-name" maxlength="24" placeholder="e.g. Siddharth" autocomplete="nickname">
+      </label>
+      <button id="btn-create" class="btn btn-big">Start a room</button>
+      <div class="or"><span>or join one</span></div>
+      <form id="join-form" class="ticket-input">
+        <input id="land-code" maxlength="6" placeholder="ROOM CODE" autocomplete="off" spellcheck="false" aria-label="Room code">
+        <button class="btn btn-ghost" type="submit">Join</button>
+      </form>
+      <p id="land-error" class="error" role="alert"></p>
+    </div>
+
+    <ol class="steps">
+      <li><b>Make a room.</b> You get a code and a link, like a ticket.</li>
+      <li><b>Send it to the group.</b> Or let them scan the QR off your screen.</li>
+      <li><b>Pick something, press play.</b> Everyone’s video moves together. Pause, skip, rewind, it all stays in sync.</li>
+    </ol>
+  </section>
+
+  <section class="land-strip">
+    <h2>Free to watch tonight, nothing to download</h2>
+    <div id="land-posters" class="poster-strip"></div>
+    <p class="fine">Open movies from the Blender Foundation and public-domain classics from the Internet Archive. For anything else, everyone can use their own copy or their own streaming app, and Back Row keeps the room in step.</p>
+  </section>
+
+  <footer class="land-foot">
+    Built for a club recruitment task · <a href="https://github.com/sxiddy/watch-party">source on GitHub</a>
+  </footer>
+</main>
+
+<!-- ============ the room ============ -->
+<div id="room" class="room" hidden>
+  <header class="topbar">
+    <a class="wordmark small" href="/" title="Leave the room">Back Row</a>
+
+    <button id="ticket" class="ticket" title="Copy invite link">
+      <span class="ticket-label">Room</span>
+      <span id="room-code" class="ticket-code">------</span>
+      <span class="ticket-hint" id="ticket-hint">copy link</span>
+    </button>
+    <button id="btn-qr" class="icon-btn" title="Show QR code" aria-label="Show QR code">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 3h8v8H3zm2 2v4h4V5zm8-2h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zm11-2h2v2h-2zm-3 0h2v4h-2zm3 3h2v2h-2zm2 2h3v3h-2v-1h-1zm-5 1h2v2h-2zm7-6h1v3h-1z"/></svg>
+    </button>
+
+    <div class="now-showing" id="now-showing"><span class="ns-label">Nothing on yet</span></div>
+
+    <div class="top-right">
+      <span id="net-dot" class="net-dot" title="Connection"></span>
+      <button id="btn-recap" class="btn btn-small btn-ghost">Recap</button>
+      <button id="btn-settings" class="btn btn-small btn-ghost" hidden>Room settings</button>
+    </div>
+  </header>
+
+  <div class="room-grid">
+    <section class="stage-col">
+      <div id="stage" class="stage">
+        <div id="player-host" class="player-host"></div>
+
+        <div id="empty-screen" class="screen-msg">
+          <p class="screen-big">The screen’s dark.</p>
+          <p id="empty-sub">Pick something from the list below. <span class="host-only">You’re the host, so it’s your call.</span></p>
+        </div>
+
+        <div id="companion" class="companion" hidden>
+          <p class="comp-kicker">Companion mode</p>
+          <h2 id="comp-title">Movie</h2>
+          <p class="comp-sub">Everyone plays it in their own app (Netflix, Prime, a TV, whatever). Back Row is the shared clock.</p>
+          <div id="comp-clock" class="comp-clock">0:00:00</div>
+          <div id="comp-state" class="comp-state">paused</div>
+          <form id="comp-check" class="comp-check">
+            <label>Where’s your screen at? <input id="comp-where" placeholder="1:02:15" inputmode="numeric"></label>
+            <button class="btn btn-small" type="submit">Check</button>
+          </form>
+          <p id="comp-result" class="comp-result"></p>
+          <div id="comp-providers" class="providers"></div>
+        </div>
+
+        <div id="local-pick" class="screen-msg" hidden>
+          <p class="screen-big">Bring your own copy</p>
+          <p>The room is watching <b id="local-name">a file</b>. Pick the same file from your computer, it never leaves your device.</p>
+          <label class="btn file-btn">Choose file<input id="local-input" type="file" accept="video/*,.mkv"></label>
+          <p id="local-warn" class="warn"></p>
+        </div>
+
+        <div id="captions" class="captions" aria-live="off"></div>
+        <div id="reactions-layer" class="reactions-layer" aria-hidden="true"></div>
+        <div id="countdown" class="countdown" hidden><span></span></div>
+        <div id="notice" class="notice" hidden></div>
+
+        <div id="blocked" class="screen-msg blocked" hidden>
+          <button id="btn-unblock" class="btn btn-big">Join the show</button>
+          <p>Your browser wants one click before it plays sound.</p>
+        </div>
+
+        <div id="intermission" class="intermission" hidden>
+          <p class="im-kicker">Intermission</p>
+          <div id="im-clock" class="im-clock">5:00</div>
+          <p id="im-ready-line">Grab snacks. We start again when the timer runs out or everyone’s back.</p>
+          <button id="btn-im-ready" class="btn">I’m back</button>
+          <button id="btn-im-end" class="btn btn-ghost control-only">Start now</button>
+          <div id="im-ready" class="im-ready"></div>
+        </div>
+      </div>
+
+      <div class="controls" id="controls">
+        <button id="btn-play" class="ctl ctl-play" aria-label="Play" title="Play / pause (space)">
+          <svg class="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>
+          <svg class="i-pause" viewBox="0 0 24 24"><path d="M6 4h4v16H6zm8 0h4v16h-4z" fill="currentColor"/></svg>
+        </button>
+        <button id="btn-countdown" class="ctl ctl-text control-only" title="Start everyone together with a 3-2-1">3·2·1</button>
+        <span id="time" class="time">0:00 / 0:00</span>
+
+        <div id="seek" class="seek" role="slider" aria-label="Seek" tabindex="0" aria-valuemin="0">
+          <canvas id="heat" class="heat"></canvas>
+          <div class="seek-track"><div id="seek-buffer" class="seek-buffer"></div><div id="seek-fill" class="seek-fill"></div></div>
+          <div id="seek-clips" class="seek-clips"></div>
+          <div id="seek-thumb" class="seek-thumb"></div>
+          <div id="seek-tip" class="seek-tip" hidden></div>
+        </div>
+
+        <button id="btn-missed" class="ctl ctl-text" title="Missed that? If enough people press it, everyone goes back 10s (R)">Missed that</button>
+        <button id="btn-clip" class="ctl ctl-text" title="Save the last 15 seconds as a highlight (C)">Clip it</button>
+        <button id="btn-cc" class="ctl ctl-text" title="Subtitles">CC</button>
+        <input id="volume" class="volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+        <button id="btn-full" class="ctl" title="Full screen (F)" aria-label="Full screen">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg>
+        </button>
+      </div>
+
+      <div class="react-bar" id="react-bar"></div>
+      <p id="rewind-meter" class="rewind-meter"></p>
+
+      <!-- movie discovery -->
+      <section class="discover" id="discover">
+        <div class="disc-head">
+          <h2>What are we watching?</h2>
+          <div class="search-box">
+            <input id="search" type="search" placeholder="Search movies, actors, directors… typos are fine" autocomplete="off">
+          </div>
+        </div>
+        <div class="filters" id="filters">
+          <select id="f-genre" aria-label="Genre"><option value="">Any genre</option></select>
+          <select id="f-decade" aria-label="Decade"><option value="">Any year</option></select>
+          <select id="f-runtime" aria-label="Length">
+            <option value="">Any length</option><option value="20">Under 20 min</option><option value="90">Under 1.5 h</option><option value="120">Under 2 h</option><option value="150">Under 2.5 h</option>
+          </select>
+          <select id="f-rating" aria-label="Rating">
+            <option value="">Any rating</option><option value="6">6+</option><option value="7">7+</option><option value="8">8+</option>
+          </select>
+          <select id="f-lang" aria-label="Language" hidden>
+            <option value="">Any language</option><option value="en">English</option><option value="hi">Hindi</option><option value="ta">Tamil</option><option value="te">Telugu</option><option value="ml">Malayalam</option><option value="ko">Korean</option><option value="ja">Japanese</option><option value="es">Spanish</option><option value="fr">French</option>
+          </select>
+          <label class="chk"><input id="f-free" type="checkbox"> Free to stream</label>
+          <button id="f-clear" class="link-btn" hidden>clear</button>
+          <button id="btn-link" class="btn btn-small btn-ghost">Paste a link</button>
+          <button id="btn-ownfile" class="btn btn-small btn-ghost control-only">Use our own files</button>
+        </div>
+        <div id="disc-results"></div>
+      </section>
+    </section>
+
+    <aside class="side">
+      <div id="people" class="people"></div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="chat">Chat</button>
+        <button class="tab" data-tab="queue">Queue <span class="count" id="queue-count"></span></button>
+        <button class="tab" data-tab="polls">Polls <span class="count" id="poll-count"></span></button>
+        <button class="tab" data-tab="clips">Clips</button>
+        <button class="tab" data-tab="sync">Sync</button>
+      </nav>
+
+      <section class="panel active" data-panel="chat">
+        <div id="catchup" class="catchup" hidden></div>
+        <div id="chat-log" class="chat-log" aria-live="polite"></div>
+        <div id="typing" class="typing"></div>
+        <form id="chat-form" class="chat-form">
+          <input id="chat-input" maxlength="500" placeholder="Say something… (/spoiler hides it)" autocomplete="off">
+          <button class="btn btn-small" type="submit">Send</button>
+        </form>
+      </section>
+
+      <section class="panel" data-panel="queue">
+        <div class="panel-actions">
+          <button id="btn-queue-poll" class="btn btn-small btn-ghost">Let the room vote</button>
+          <button id="btn-queue-sort" class="btn btn-small btn-ghost control-only">Sort by votes</button>
+        </div>
+        <ol id="queue" class="queue"></ol>
+        <p class="empty" id="queue-empty">Queue’s empty. Add things from the list on the left.</p>
+      </section>
+
+      <section class="panel" data-panel="polls">
+        <form id="poll-form" class="poll-form">
+          <input id="poll-q" maxlength="140" placeholder="Ask the room something">
+          <div id="poll-opts">
+            <input class="poll-opt" maxlength="80" placeholder="Option 1">
+            <input class="poll-opt" maxlength="80" placeholder="Option 2">
+          </div>
+          <div class="poll-row">
+            <button type="button" id="poll-add" class="link-btn">+ option</button>
+            <select id="poll-dur" aria-label="Poll length"><option value="30">30 s</option><option value="60" selected>1 min</option><option value="180">3 min</option><option value="0">until closed</option></select>
+            <button class="btn btn-small" type="submit">Start poll</button>
+          </div>
+        </form>
+        <div id="polls"></div>
+      </section>
+
+      <section class="panel" data-panel="clips">
+        <p class="panel-note">Hit <b>Clip it</b> (or press C) when something good happens. It saves the last 15 seconds for the whole room.</p>
+        <div id="clips"></div>
+      </section>
+
+      <section class="panel" data-panel="sync">
+        <div class="sync-grid">
+          <div><span class="k">Your drift</span><b id="s-drift">-</b></div>
+          <div><span class="k">Round trip</span><b id="s-rtt">-</b></div>
+          <div><span class="k">Room p95</span><b id="s-p95">-</b></div>
+          <div><span class="k">Room p50</span><b id="s-p50">-</b></div>
+        </div>
+        <canvas id="drift-chart" class="drift-chart" width="300" height="80"></canvas>
+        <p class="panel-note small">Drift is how far your video is from where the room says it should be. Under 40 ms we leave it alone, up to 400 ms we quietly speed up or slow down, and beyond that we jump. “p95” is click-to-screen delay for play, pause and seek: 95% of changes reach people faster than this.</p>
+        <table class="sync-table"><thead><tr><th>Who</th><th>Ping</th><th>Drift</th><th></th></tr></thead><tbody id="sync-rows"></tbody></table>
+        <p class="panel-note small" id="s-fixes"></p>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<!-- ============ dialogs ============ -->
+<dialog id="dlg-movie" class="dlg dlg-movie">
+  <button class="dlg-x" data-close aria-label="Close">×</button>
+  <div id="movie-body"></div>
+</dialog>
+
+<dialog id="dlg-name" class="dlg dlg-small">
+  <form id="name-form" method="dialog">
+    <h3>Grab a seat</h3>
+    <p id="name-room-line">You’ve been invited to a room.</p>
+    <label class="field"><span>Your name</span><input id="name-input" maxlength="24" required autocomplete="nickname"></label>
+    <button class="btn btn-big" type="submit">Take me in</button>
+  </form>
+</dialog>
+
+<dialog id="dlg-qr" class="dlg dlg-small">
+  <button class="dlg-x" data-close aria-label="Close">×</button>
+  <h3>Scan to join</h3>
+  <canvas id="qr-canvas" width="240" height="240"></canvas>
+  <p class="mono" id="qr-link"></p>
+</dialog>
+
+<dialog id="dlg-settings" class="dlg dlg-small">
+  <button class="dlg-x" data-close aria-label="Close">×</button>
+  <h3>Room settings</h3>
+  <label class="row-opt"><span>Who can press play, pause and seek?</span>
+    <select id="set-control"><option value="host">Host and co-hosts</option><option value="everyone">Everyone</option></select></label>
+  <label class="row-opt chk"><input type="checkbox" id="set-buffer"> Pause for everyone when someone’s buffering</label>
+  <label class="row-opt chk"><input type="checkbox" id="set-rewind"> Auto-rewind 10s when enough people miss something</label>
+  <label class="row-opt chk"><input type="checkbox" id="set-cc"> Subtitles on for everyone</label>
+  <h4>Intermission</h4>
+  <div class="im-buttons">
+    <button class="btn btn-small btn-ghost" data-im="5">5 min</button>
+    <button class="btn btn-small btn-ghost" data-im="10">10 min</button>
+    <button class="btn btn-small btn-ghost" data-im="15">15 min</button>
+  </div>
+  <p class="fine">Tip: click someone in the people strip to hand them the host role or make them a co-host.</p>
+</dialog>
+
+<dialog id="dlg-cc" class="dlg dlg-small">
+  <button class="dlg-x" data-close aria-label="Close">×</button>
+  <h3>Subtitles</h3>
+  <div id="cc-list" class="cc-list"></div>
+  <label class="btn btn-small btn-ghost file-btn">Load a .srt / .vtt file<input id="cc-file" type="file" accept=".srt,.vtt,text/vtt"></label>
+  <p class="fine">If you’re the host (or a co-host), a file you load is shared with the whole room automatically.</p>
+  <label class="row-opt"><span>Text size</span>
+    <select id="cc-size"><option value="s">Small</option><option value="m" selected>Medium</option><option value="l">Large</option></select></label>
+</dialog>
+
+<dialog id="dlg-link" class="dlg dlg-small">
+  <button class="dlg-x" data-close aria-label="Close">×</button>
+  <form id="link-form" method="dialog">
+    <h3>Paste a link</h3>
+    <p class="fine">A YouTube link, or a direct video file (.mp4 / .webm).</p>
+    <input id="link-url" class="wide" placeholder="https://…" required>
+    <input id="link-title" class="wide" placeholder="Title (optional)" maxlength="120">
+    <div class="poll-row">
+      <button class="btn btn-small" value="play" type="submit" id="link-play">Show it now</button>
+      <button class="btn btn-small btn-ghost" value="queue" type="submit">Add to queue</button>
+    </div>
+    <p class="error" id="link-error"></p>
+  </form>
+</dialog>
+
+<dialog id="dlg-recap" class="dlg dlg-small">
+  <button class="dlg-x" data-close aria-label="Close">×</button>
+  <div id="recap-body"></div>
+</dialog>
+
+<div id="person-menu" class="person-menu" hidden></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/sync-core.js"></script>
+<script src="/js/fuzzy.js"></script>
+<script src="/js/qr.js"></script>
+<script src="/js/net.js"></script>
+<script src="/js/player.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/discover.js"></script>
+<script src="/js/room.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

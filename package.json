@@ -1,0 +1,22 @@
+{
+  "name": "watch-party",
+  "version": "1.0.0",
+  "description": "Real-time synchronized watch-party app",
+  "main": "server/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "bench": "node bench/latency.js",
+    "drift-sim": "node bench/drift-sim.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.22.3",
+    "socket.io": "^4.8.4",
+    "socket.io-client": "^4.8.4"
+  }
+}

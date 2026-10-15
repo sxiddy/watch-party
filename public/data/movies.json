@@ -1,0 +1,1622 @@
+{
+ "categories": [
+  {
+   "id": "free",
+   "label": "Free to watch right now",
+   "emoji": "▶️",
+   "rule": {
+    "playable": true
+   }
+  },
+  {
+   "id": "pd",
+   "label": "Old, free and still great",
+   "emoji": "🎞️",
+   "rule": {
+    "tag": "public-domain"
+   }
+  },
+  {
+   "id": "mind-bender",
+   "label": "Mind-benders",
+   "emoji": "🌀",
+   "rule": {
+    "tag": "mind-bender"
+   }
+  },
+  {
+   "id": "feel-good",
+   "label": "Feel-good picks",
+   "emoji": "☀️",
+   "rule": {
+    "tag": "feel-good"
+   }
+  },
+  {
+   "id": "edge",
+   "label": "Edge of your seat",
+   "emoji": "😱",
+   "rule": {
+    "tag": "thrilling"
+   }
+  },
+  {
+   "id": "animated",
+   "label": "Animated worlds",
+   "emoji": "🎨",
+   "rule": {
+    "genre": "Animation"
+   }
+  },
+  {
+   "id": "date-night",
+   "label": "Date night",
+   "emoji": "💞",
+   "rule": {
+    "tag": "date-night"
+   }
+  },
+  {
+   "id": "group",
+   "label": "Great with a big group",
+   "emoji": "🎉",
+   "rule": {
+    "tag": "crowd-pleaser"
+   }
+  },
+  {
+   "id": "quick",
+   "label": "Under 20 minutes",
+   "emoji": "⚡",
+   "rule": {
+    "maxRuntime": 20
+   }
+  }
+ ],
+ "movies": [
+  {
+   "id": "big-buck-bunny",
+   "title": "Big Buck Bunny",
+   "year": 2008,
+   "genres": [
+    "Animation",
+    "Comedy"
+   ],
+   "runtime": 10,
+   "rating": 7.2,
+   "director": "Sacha Goedegebure",
+   "cast": [
+    "Blender Foundation"
+   ],
+   "tags": [
+    "feel-good",
+    "crowd-pleaser",
+    "family",
+    "open-movie"
+   ],
+   "emoji": "🐰",
+   "description": "A giant, gentle rabbit takes elaborate revenge on three bullying rodents.",
+   "src": "https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4",
+   "poster": "https://archive.org/services/img/BigBuckBunny_328"
+  },
+  {
+   "id": "sintel",
+   "title": "Sintel",
+   "year": 2010,
+   "genres": [
+    "Animation",
+    "Fantasy",
+    "Adventure"
+   ],
+   "runtime": 15,
+   "rating": 7.4,
+   "director": "Colin Levy",
+   "cast": [
+    "Halina Reijn",
+    "Thom Hoffman"
+   ],
+   "tags": [
+    "emotional",
+    "thrilling",
+    "open-movie"
+   ],
+   "emoji": "🐉",
+   "description": "A lone warrior searches the world for the baby dragon she once rescued.",
+   "src": "https://archive.org/download/Sintel/sintel-2048-stereo_512kb.mp4",
+   "poster": "https://archive.org/services/img/Sintel"
+  },
+  {
+   "id": "tears-of-steel",
+   "title": "Tears of Steel",
+   "year": 2012,
+   "genres": [
+    "Sci-Fi",
+    "Action"
+   ],
+   "runtime": 12,
+   "rating": 6.2,
+   "director": "Ian Hubert",
+   "cast": [
+    "Derek de Lint",
+    "Sergio Hasselbaink",
+    "Rogier Schippers"
+   ],
+   "tags": [
+    "thrilling",
+    "robots",
+    "open-movie"
+   ],
+   "emoji": "🤖",
+   "description": "Scientists in a future Amsterdam try to save the world from rogue robots by replaying a breakup.",
+   "src": "https://archive.org/download/Tears-of-Steel/tears_of_steel_720p.mp4",
+   "poster": "https://archive.org/services/img/Tears-of-Steel"
+  },
+  {
+   "id": "elephants-dream",
+   "title": "Elephants Dream",
+   "year": 2006,
+   "genres": [
+    "Animation",
+    "Sci-Fi"
+   ],
+   "runtime": 11,
+   "rating": 6.5,
+   "director": "Bassam Kurdali",
+   "cast": [
+    "Tygo Gernandt",
+    "Cas Jansen"
+   ],
+   "tags": [
+    "mind-bender",
+    "surreal",
+    "open-movie"
+   ],
+   "emoji": "🐘",
+   "description": "Two men explore a vast, shifting machine that one of them believes he created.",
+   "src": "https://archive.org/download/ElephantsDream/ed_1024_512kb.mp4",
+   "poster": "https://archive.org/services/img/ElephantsDream"
+  },
+  {
+   "id": "cosmos-laundromat",
+   "title": "Cosmos Laundromat",
+   "year": 2015,
+   "genres": [
+    "Animation",
+    "Comedy",
+    "Fantasy"
+   ],
+   "runtime": 12,
+   "rating": 7.1,
+   "director": "Mathieu Auvray",
+   "cast": [
+    "Pierre Bokma",
+    "Reinout Scholten van Aschat"
+   ],
+   "tags": [
+    "quirky",
+    "mind-bender",
+    "open-movie"
+   ],
+   "emoji": "🐑",
+   "description": "A suicidal sheep meets a strange salesman who offers him the chance of a lifetime.",
+   "src": "https://archive.org/download/cosmos-laundromat/Cosmos%20Laundromat.mp4",
+   "poster": null
+  },
+  {
+   "id": "agent-327",
+   "title": "Agent 327: Operation Barbershop",
+   "year": 2017,
+   "genres": [
+    "Animation",
+    "Action",
+    "Comedy"
+   ],
+   "runtime": 4,
+   "rating": 7.6,
+   "director": "Colin Levy",
+   "cast": [
+    "Blender Animation Studio"
+   ],
+   "tags": [
+    "crowd-pleaser",
+    "spy",
+    "open-movie",
+    "quick"
+   ],
+   "emoji": "💈",
+   "description": "A secret agent goes undercover in a barbershop that is hiding something.",
+   "src": "https://archive.org/download/agent327operationbarbershop/agent327.mp4",
+   "poster": "https://archive.org/services/img/agent327operationbarbershop"
+  },
+  {
+   "id": "caminandes-llama-drama",
+   "title": "Caminandes: Llama Drama",
+   "year": 2013,
+   "genres": [
+    "Animation",
+    "Comedy",
+    "Short"
+   ],
+   "runtime": 2,
+   "rating": 7,
+   "director": "Pablo Vazquez",
+   "cast": [
+    "Blender Foundation"
+   ],
+   "tags": [
+    "quick",
+    "feel-good",
+    "open-movie"
+   ],
+   "emoji": "🦙",
+   "description": "A llama really wants to cross the road. A 90-second short, handy for quick sync tests.",
+   "src": "https://archive.org/download/Caminandes1LlamaDrama/01_llama_drama_1080p.mp4",
+   "poster": "https://archive.org/services/img/Caminandes1LlamaDrama"
+  },
+  {
+   "id": "night-of-the-living-dead",
+   "title": "Night of the Living Dead",
+   "year": 1968,
+   "genres": [
+    "Horror",
+    "Thriller"
+   ],
+   "runtime": 96,
+   "rating": 7.8,
+   "director": "George A. Romero",
+   "cast": [
+    "Duane Jones",
+    "Judith O'Dea"
+   ],
+   "tags": [
+    "scary",
+    "thrilling",
+    "classic",
+    "zombies",
+    "public-domain"
+   ],
+   "emoji": "🧟",
+   "description": "Strangers barricade themselves in a farmhouse as the dead begin to walk.",
+   "archive": {
+    "year": 1968
+   }
+  },
+  {
+   "id": "his-girl-friday",
+   "title": "His Girl Friday",
+   "year": 1940,
+   "genres": [
+    "Comedy",
+    "Romance"
+   ],
+   "runtime": 92,
+   "rating": 7.8,
+   "director": "Howard Hawks",
+   "cast": [
+    "Cary Grant",
+    "Rosalind Russell"
+   ],
+   "tags": [
+    "date-night",
+    "classic",
+    "fast-talk",
+    "public-domain"
+   ],
+   "emoji": "🗞️",
+   "description": "A newspaper editor schemes to keep his ex-wife, and star reporter, from remarrying.",
+   "archive": {
+    "year": 1940
+   }
+  },
+  {
+   "id": "the-general",
+   "title": "The General",
+   "year": 1926,
+   "genres": [
+    "Comedy",
+    "Action",
+    "Adventure"
+   ],
+   "runtime": 79,
+   "rating": 8.1,
+   "director": "Buster Keaton",
+   "cast": [
+    "Buster Keaton",
+    "Marion Mack"
+   ],
+   "tags": [
+    "classic",
+    "silent",
+    "crowd-pleaser",
+    "public-domain"
+   ],
+   "emoji": "🚂",
+   "description": "A train engineer chases the Union spies who stole his locomotive, and his girl.",
+   "archive": {
+    "year": 1926
+   }
+  },
+  {
+   "id": "nosferatu",
+   "title": "Nosferatu",
+   "year": 1922,
+   "genres": [
+    "Horror",
+    "Fantasy"
+   ],
+   "runtime": 79,
+   "rating": 7.8,
+   "director": "F. W. Murnau",
+   "cast": [
+    "Max Schreck",
+    "Gustav von Wangenheim"
+   ],
+   "tags": [
+    "scary",
+    "silent",
+    "classic",
+    "public-domain"
+   ],
+   "emoji": "🦇",
+   "description": "A real-estate agent travels to the castle of a strange count with a taste for blood.",
+   "archive": {
+    "year": 1922
+   }
+  },
+  {
+   "id": "plan-9",
+   "title": "Plan 9 from Outer Space",
+   "year": 1957,
+   "genres": [
+    "Sci-Fi",
+    "Horror"
+   ],
+   "runtime": 78,
+   "rating": 3.9,
+   "director": "Ed Wood",
+   "cast": [
+    "Bela Lugosi",
+    "Vampira",
+    "Tor Johnson"
+   ],
+   "tags": [
+    "so-bad-its-good",
+    "crowd-pleaser",
+    "party",
+    "public-domain"
+   ],
+   "emoji": "🛸",
+   "description": "Aliens raise the dead to stop humanity from building a doomsday weapon. Gloriously bad.",
+   "archive": {
+    "year": 1957
+   }
+  },
+  {
+   "id": "sherlock-jr",
+   "title": "Sherlock Jr.",
+   "year": 1924,
+   "genres": [
+    "Comedy",
+    "Mystery"
+   ],
+   "runtime": 46,
+   "rating": 8.2,
+   "director": "Buster Keaton",
+   "cast": [
+    "Buster Keaton",
+    "Kathryn McGuire"
+   ],
+   "tags": [
+    "classic",
+    "silent",
+    "feel-good",
+    "public-domain"
+   ],
+   "emoji": "🔍",
+   "description": "A cinema projectionist dreams himself into the detective film he is showing.",
+   "archive": {
+    "year": 1924
+   }
+  },
+  {
+   "id": "detour",
+   "title": "Detour",
+   "year": 1945,
+   "genres": [
+    "Crime",
+    "Thriller"
+   ],
+   "runtime": 68,
+   "rating": 7.2,
+   "director": "Edgar G. Ulmer",
+   "cast": [
+    "Tom Neal",
+    "Ann Savage"
+   ],
+   "tags": [
+    "noir",
+    "thrilling",
+    "classic",
+    "public-domain"
+   ],
+   "emoji": "🛣️",
+   "description": "A hitchhiking pianist gets trapped by one bad decision after another.",
+   "archive": {
+    "year": 1945
+   }
+  },
+  {
+   "id": "little-shop-of-horrors-1960",
+   "title": "The Little Shop of Horrors",
+   "year": 1960,
+   "genres": [
+    "Comedy",
+    "Horror"
+   ],
+   "runtime": 73,
+   "rating": 6.2,
+   "director": "Roger Corman",
+   "cast": [
+    "Jonathan Haze",
+    "Jack Nicholson"
+   ],
+   "tags": [
+    "so-bad-its-good",
+    "party",
+    "quirky",
+    "public-domain"
+   ],
+   "emoji": "🪴",
+   "description": "A flower-shop clerk raises a plant that develops a craving for human flesh.",
+   "archive": {
+    "year": 1960
+   }
+  },
+  {
+   "id": "carnival-of-souls",
+   "title": "Carnival of Souls",
+   "year": 1962,
+   "genres": [
+    "Horror",
+    "Mystery"
+   ],
+   "runtime": 83,
+   "rating": 7,
+   "director": "Herk Harvey",
+   "cast": [
+    "Candace Hilligoss",
+    "Frances Feist"
+   ],
+   "tags": [
+    "scary",
+    "mind-bender",
+    "classic",
+    "public-domain"
+   ],
+   "emoji": "🎡",
+   "description": "After surviving a car crash, a church organist is drawn to an abandoned pavilion.",
+   "archive": {
+    "year": 1962
+   }
+  },
+  {
+   "id": "house-on-haunted-hill",
+   "title": "House on Haunted Hill",
+   "year": 1959,
+   "genres": [
+    "Horror",
+    "Mystery"
+   ],
+   "runtime": 75,
+   "rating": 6.8,
+   "director": "William Castle",
+   "cast": [
+    "Vincent Price",
+    "Carol Ohmart"
+   ],
+   "tags": [
+    "scary",
+    "crowd-pleaser",
+    "classic",
+    "party",
+    "public-domain"
+   ],
+   "emoji": "🏚️",
+   "description": "A millionaire offers five guests $10,000 each to survive a night in a haunted house.",
+   "archive": {
+    "year": 1959
+   }
+  },
+  {
+   "id": "doa-1949",
+   "title": "D.O.A.",
+   "year": 1949,
+   "genres": [
+    "Crime",
+    "Thriller",
+    "Mystery"
+   ],
+   "runtime": 84,
+   "rating": 7.3,
+   "director": "Rudolph Maté",
+   "cast": [
+    "Edmond O'Brien",
+    "Pamela Britton"
+   ],
+   "tags": [
+    "noir",
+    "thrilling",
+    "classic",
+    "public-domain"
+   ],
+   "emoji": "☠️",
+   "description": "A poisoned man has a few days to find out who killed him.",
+   "archive": {
+    "year": 1949
+   }
+  },
+  {
+   "id": "phantom-of-the-opera-1925",
+   "title": "The Phantom of the Opera",
+   "year": 1925,
+   "genres": [
+    "Horror",
+    "Drama"
+   ],
+   "runtime": 106,
+   "rating": 7.5,
+   "director": "Rupert Julian",
+   "cast": [
+    "Lon Chaney",
+    "Mary Philbin"
+   ],
+   "tags": [
+    "scary",
+    "silent",
+    "classic",
+    "public-domain"
+   ],
+   "emoji": "🎭",
+   "description": "A disfigured genius haunting the Paris Opera falls for a young soprano.",
+   "archive": {
+    "year": 1925
+   }
+  },
+  {
+   "id": "last-man-on-earth",
+   "title": "The Last Man on Earth",
+   "year": 1964,
+   "genres": [
+    "Horror",
+    "Sci-Fi"
+   ],
+   "runtime": 87,
+   "rating": 6.8,
+   "director": "Ubaldo Ragona",
+   "cast": [
+    "Vincent Price",
+    "Franca Bettoia"
+   ],
+   "tags": [
+    "scary",
+    "classic",
+    "apocalypse",
+    "public-domain"
+   ],
+   "emoji": "🌒",
+   "description": "After a plague, one man hunts the vampire-like survivors by day.",
+   "archive": {
+    "year": 1964
+   }
+  },
+  {
+   "id": "royal-wedding",
+   "title": "Royal Wedding",
+   "year": 1951,
+   "genres": [
+    "Musical",
+    "Romance",
+    "Comedy"
+   ],
+   "runtime": 93,
+   "rating": 6.5,
+   "director": "Stanley Donen",
+   "cast": [
+    "Fred Astaire",
+    "Jane Powell"
+   ],
+   "tags": [
+    "date-night",
+    "music",
+    "feel-good",
+    "classic",
+    "public-domain"
+   ],
+   "emoji": "💃",
+   "description": "A brother-and-sister dance act head to London for the royal wedding.",
+   "archive": {
+    "year": 1951
+   }
+  },
+  {
+   "id": "inception",
+   "title": "Inception",
+   "year": 2010,
+   "genres": [
+    "Sci-Fi",
+    "Action",
+    "Thriller"
+   ],
+   "runtime": 148,
+   "rating": 8.8,
+   "director": "Christopher Nolan",
+   "cast": [
+    "Leonardo DiCaprio",
+    "Joseph Gordon-Levitt",
+    "Elliot Page",
+    "Tom Hardy"
+   ],
+   "tags": [
+    "mind-bender",
+    "thrilling",
+    "heist",
+    "crowd-pleaser"
+   ],
+   "emoji": "🌀",
+   "description": "A thief who steals secrets from dreams is hired to plant an idea instead."
+  },
+  {
+   "id": "interstellar",
+   "title": "Interstellar",
+   "year": 2014,
+   "genres": [
+    "Sci-Fi",
+    "Drama",
+    "Adventure"
+   ],
+   "runtime": 169,
+   "rating": 8.7,
+   "director": "Christopher Nolan",
+   "cast": [
+    "Matthew McConaughey",
+    "Anne Hathaway",
+    "Jessica Chastain"
+   ],
+   "tags": [
+    "mind-bender",
+    "emotional",
+    "space"
+   ],
+   "emoji": "🪐",
+   "description": "Explorers travel through a wormhole to find humanity a new home."
+  },
+  {
+   "id": "the-dark-knight",
+   "title": "The Dark Knight",
+   "year": 2008,
+   "genres": [
+    "Action",
+    "Crime",
+    "Drama"
+   ],
+   "runtime": 152,
+   "rating": 9,
+   "director": "Christopher Nolan",
+   "cast": [
+    "Christian Bale",
+    "Heath Ledger",
+    "Aaron Eckhart"
+   ],
+   "tags": [
+    "thrilling",
+    "superhero",
+    "crowd-pleaser"
+   ],
+   "emoji": "🦇",
+   "description": "Batman faces the Joker, an agent of chaos who wants to watch Gotham burn."
+  },
+  {
+   "id": "the-prestige",
+   "title": "The Prestige",
+   "year": 2006,
+   "genres": [
+    "Mystery",
+    "Drama",
+    "Thriller"
+   ],
+   "runtime": 130,
+   "rating": 8.5,
+   "director": "Christopher Nolan",
+   "cast": [
+    "Hugh Jackman",
+    "Christian Bale",
+    "Scarlett Johansson"
+   ],
+   "tags": [
+    "mind-bender",
+    "twist",
+    "magic"
+   ],
+   "emoji": "🎩",
+   "description": "Two rival magicians push each other to dangerous extremes."
+  },
+  {
+   "id": "parasite",
+   "title": "Parasite",
+   "year": 2019,
+   "genres": [
+    "Thriller",
+    "Drama",
+    "Comedy"
+   ],
+   "runtime": 132,
+   "rating": 8.5,
+   "director": "Bong Joon Ho",
+   "cast": [
+    "Song Kang-ho",
+    "Choi Woo-shik",
+    "Park So-dam"
+   ],
+   "tags": [
+    "thrilling",
+    "twist",
+    "dark-comedy"
+   ],
+   "emoji": "🪨",
+   "description": "A poor family schemes its way into working for a wealthy household."
+  },
+  {
+   "id": "spirited-away",
+   "title": "Spirited Away",
+   "year": 2001,
+   "genres": [
+    "Animation",
+    "Fantasy",
+    "Family"
+   ],
+   "runtime": 125,
+   "rating": 8.6,
+   "director": "Hayao Miyazaki",
+   "cast": [
+    "Rumi Hiiragi",
+    "Miyu Irino"
+   ],
+   "tags": [
+    "feel-good",
+    "magical",
+    "family",
+    "anime"
+   ],
+   "emoji": "🐉",
+   "description": "A girl working in a bathhouse for spirits must free her parents from a curse."
+  },
+  {
+   "id": "howls-moving-castle",
+   "title": "Howl's Moving Castle",
+   "year": 2004,
+   "genres": [
+    "Animation",
+    "Fantasy",
+    "Romance"
+   ],
+   "runtime": 119,
+   "rating": 8.2,
+   "director": "Hayao Miyazaki",
+   "cast": [
+    "Chieko Baisho",
+    "Takuya Kimura"
+   ],
+   "tags": [
+    "magical",
+    "date-night",
+    "anime"
+   ],
+   "emoji": "🏰",
+   "description": "A young woman under a curse finds refuge in a wizard's walking castle."
+  },
+  {
+   "id": "your-name",
+   "title": "Your Name",
+   "year": 2016,
+   "genres": [
+    "Animation",
+    "Romance",
+    "Fantasy"
+   ],
+   "runtime": 106,
+   "rating": 8.4,
+   "director": "Makoto Shinkai",
+   "cast": [
+    "Ryunosuke Kamiki",
+    "Mone Kamishiraishi"
+   ],
+   "tags": [
+    "date-night",
+    "emotional",
+    "mind-bender",
+    "anime"
+   ],
+   "emoji": "☄️",
+   "description": "Two teenagers mysteriously begin swapping bodies."
+  },
+  {
+   "id": "grand-budapest-hotel",
+   "title": "The Grand Budapest Hotel",
+   "year": 2014,
+   "genres": [
+    "Comedy",
+    "Adventure"
+   ],
+   "runtime": 99,
+   "rating": 8.1,
+   "director": "Wes Anderson",
+   "cast": [
+    "Ralph Fiennes",
+    "Tony Revolori",
+    "Saoirse Ronan"
+   ],
+   "tags": [
+    "feel-good",
+    "quirky",
+    "date-night"
+   ],
+   "emoji": "🏨",
+   "description": "A legendary concierge and his lobby boy are caught up in a theft and a murder."
+  },
+  {
+   "id": "get-out",
+   "title": "Get Out",
+   "year": 2017,
+   "genres": [
+    "Horror",
+    "Thriller",
+    "Mystery"
+   ],
+   "runtime": 104,
+   "rating": 7.8,
+   "director": "Jordan Peele",
+   "cast": [
+    "Daniel Kaluuya",
+    "Allison Williams"
+   ],
+   "tags": [
+    "thrilling",
+    "twist",
+    "crowd-pleaser"
+   ],
+   "emoji": "🫖",
+   "description": "A weekend visit to his girlfriend's family turns sinister."
+  },
+  {
+   "id": "hereditary",
+   "title": "Hereditary",
+   "year": 2018,
+   "genres": [
+    "Horror",
+    "Drama"
+   ],
+   "runtime": 127,
+   "rating": 7.3,
+   "director": "Ari Aster",
+   "cast": [
+    "Toni Collette",
+    "Alex Wolff",
+    "Milly Shapiro"
+   ],
+   "tags": [
+    "thrilling",
+    "scary"
+   ],
+   "emoji": "🕯️",
+   "description": "After a death in the family, a grieving household is haunted by dark secrets."
+  },
+  {
+   "id": "a-quiet-place",
+   "title": "A Quiet Place",
+   "year": 2018,
+   "genres": [
+    "Horror",
+    "Sci-Fi",
+    "Thriller"
+   ],
+   "runtime": 90,
+   "rating": 7.5,
+   "director": "John Krasinski",
+   "cast": [
+    "Emily Blunt",
+    "John Krasinski",
+    "Millicent Simmonds"
+   ],
+   "tags": [
+    "thrilling",
+    "scary",
+    "crowd-pleaser"
+   ],
+   "emoji": "🤫",
+   "description": "A family must live in silence to hide from creatures that hunt by sound."
+  },
+  {
+   "id": "mad-max-fury-road",
+   "title": "Mad Max: Fury Road",
+   "year": 2015,
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi"
+   ],
+   "runtime": 120,
+   "rating": 8.1,
+   "director": "George Miller",
+   "cast": [
+    "Tom Hardy",
+    "Charlize Theron",
+    "Nicholas Hoult"
+   ],
+   "tags": [
+    "thrilling",
+    "crowd-pleaser",
+    "chase"
+   ],
+   "emoji": "🔥",
+   "description": "A drifter and a rebel warrior flee a tyrant across the desert wasteland."
+  },
+  {
+   "id": "la-la-land",
+   "title": "La La Land",
+   "year": 2016,
+   "genres": [
+    "Romance",
+    "Musical",
+    "Drama"
+   ],
+   "runtime": 128,
+   "rating": 8,
+   "director": "Damien Chazelle",
+   "cast": [
+    "Ryan Gosling",
+    "Emma Stone"
+   ],
+   "tags": [
+    "date-night",
+    "music",
+    "emotional"
+   ],
+   "emoji": "🎹",
+   "description": "A jazz pianist and an aspiring actress fall in love in Los Angeles."
+  },
+  {
+   "id": "whiplash",
+   "title": "Whiplash",
+   "year": 2014,
+   "genres": [
+    "Drama",
+    "Music"
+   ],
+   "runtime": 106,
+   "rating": 8.5,
+   "director": "Damien Chazelle",
+   "cast": [
+    "Miles Teller",
+    "J.K. Simmons"
+   ],
+   "tags": [
+    "thrilling",
+    "music",
+    "intense"
+   ],
+   "emoji": "🥁",
+   "description": "A young drummer is pushed to the edge by a ruthless instructor."
+  },
+  {
+   "id": "coco",
+   "title": "Coco",
+   "year": 2017,
+   "genres": [
+    "Animation",
+    "Family",
+    "Music"
+   ],
+   "runtime": 105,
+   "rating": 8.4,
+   "director": "Lee Unkrich",
+   "cast": [
+    "Anthony Gonzalez",
+    "Gael García Bernal"
+   ],
+   "tags": [
+    "feel-good",
+    "emotional",
+    "family",
+    "crowd-pleaser"
+   ],
+   "emoji": "💀",
+   "description": "A boy who dreams of music stumbles into the Land of the Dead."
+  },
+  {
+   "id": "up",
+   "title": "Up",
+   "year": 2009,
+   "genres": [
+    "Animation",
+    "Adventure",
+    "Family"
+   ],
+   "runtime": 96,
+   "rating": 8.3,
+   "director": "Pete Docter",
+   "cast": [
+    "Ed Asner",
+    "Jordan Nagai"
+   ],
+   "tags": [
+    "feel-good",
+    "emotional",
+    "family"
+   ],
+   "emoji": "🎈",
+   "description": "A widower ties thousands of balloons to his house and flies to South America."
+  },
+  {
+   "id": "ratatouille",
+   "title": "Ratatouille",
+   "year": 2007,
+   "genres": [
+    "Animation",
+    "Comedy",
+    "Family"
+   ],
+   "runtime": 111,
+   "rating": 8.1,
+   "director": "Brad Bird",
+   "cast": [
+    "Patton Oswalt",
+    "Lou Romano"
+   ],
+   "tags": [
+    "feel-good",
+    "family",
+    "food"
+   ],
+   "emoji": "🐀",
+   "description": "A rat who wants to cook teams up with a hapless kitchen worker in Paris."
+  },
+  {
+   "id": "toy-story",
+   "title": "Toy Story",
+   "year": 1995,
+   "genres": [
+    "Animation",
+    "Comedy",
+    "Family"
+   ],
+   "runtime": 81,
+   "rating": 8.3,
+   "director": "John Lasseter",
+   "cast": [
+    "Tom Hanks",
+    "Tim Allen"
+   ],
+   "tags": [
+    "feel-good",
+    "family",
+    "crowd-pleaser",
+    "classic"
+   ],
+   "emoji": "🤠",
+   "description": "A cowboy doll feels threatened when a flashy space ranger joins the toy box."
+  },
+  {
+   "id": "spider-verse",
+   "title": "Spider-Man: Into the Spider-Verse",
+   "year": 2018,
+   "genres": [
+    "Animation",
+    "Action",
+    "Adventure"
+   ],
+   "runtime": 117,
+   "rating": 8.4,
+   "director": "Peter Ramsey",
+   "cast": [
+    "Shameik Moore",
+    "Jake Johnson",
+    "Hailee Steinfeld"
+   ],
+   "tags": [
+    "superhero",
+    "crowd-pleaser",
+    "feel-good"
+   ],
+   "emoji": "🕷️",
+   "description": "Teenager Miles Morales meets Spider-People from other dimensions."
+  },
+  {
+   "id": "the-matrix",
+   "title": "The Matrix",
+   "year": 1999,
+   "genres": [
+    "Sci-Fi",
+    "Action"
+   ],
+   "runtime": 136,
+   "rating": 8.7,
+   "director": "Lana Wachowski",
+   "cast": [
+    "Keanu Reeves",
+    "Laurence Fishburne",
+    "Carrie-Anne Moss"
+   ],
+   "tags": [
+    "mind-bender",
+    "thrilling",
+    "classic"
+   ],
+   "emoji": "💊",
+   "description": "A hacker learns that his reality is a simulation run by machines."
+  },
+  {
+   "id": "everything-everywhere",
+   "title": "Everything Everywhere All at Once",
+   "year": 2022,
+   "genres": [
+    "Sci-Fi",
+    "Comedy",
+    "Action"
+   ],
+   "runtime": 139,
+   "rating": 7.8,
+   "director": "Daniel Kwan",
+   "cast": [
+    "Michelle Yeoh",
+    "Ke Huy Quan",
+    "Jamie Lee Curtis"
+   ],
+   "tags": [
+    "mind-bender",
+    "emotional",
+    "quirky"
+   ],
+   "emoji": "🥯",
+   "description": "A laundromat owner discovers she can reach versions of herself across the multiverse."
+  },
+  {
+   "id": "knives-out",
+   "title": "Knives Out",
+   "year": 2019,
+   "genres": [
+    "Mystery",
+    "Comedy",
+    "Crime"
+   ],
+   "runtime": 130,
+   "rating": 7.9,
+   "director": "Rian Johnson",
+   "cast": [
+    "Daniel Craig",
+    "Ana de Armas",
+    "Chris Evans"
+   ],
+   "tags": [
+    "twist",
+    "crowd-pleaser",
+    "whodunit"
+   ],
+   "emoji": "🔪",
+   "description": "A detective investigates the death of a wealthy crime novelist."
+  },
+  {
+   "id": "arrival",
+   "title": "Arrival",
+   "year": 2016,
+   "genres": [
+    "Sci-Fi",
+    "Drama",
+    "Mystery"
+   ],
+   "runtime": 116,
+   "rating": 7.9,
+   "director": "Denis Villeneuve",
+   "cast": [
+    "Amy Adams",
+    "Jeremy Renner"
+   ],
+   "tags": [
+    "mind-bender",
+    "emotional",
+    "aliens"
+   ],
+   "emoji": "🛸",
+   "description": "A linguist is recruited to communicate with alien visitors."
+  },
+  {
+   "id": "blade-runner-2049",
+   "title": "Blade Runner 2049",
+   "year": 2017,
+   "genres": [
+    "Sci-Fi",
+    "Drama",
+    "Mystery"
+   ],
+   "runtime": 164,
+   "rating": 8,
+   "director": "Denis Villeneuve",
+   "cast": [
+    "Ryan Gosling",
+    "Harrison Ford",
+    "Ana de Armas"
+   ],
+   "tags": [
+    "mind-bender",
+    "neo-noir"
+   ],
+   "emoji": "🌆",
+   "description": "A replicant hunter uncovers a secret that could plunge society into chaos."
+  },
+  {
+   "id": "dune",
+   "title": "Dune",
+   "year": 2021,
+   "genres": [
+    "Sci-Fi",
+    "Adventure",
+    "Drama"
+   ],
+   "runtime": 155,
+   "rating": 8,
+   "director": "Denis Villeneuve",
+   "cast": [
+    "Timothée Chalamet",
+    "Rebecca Ferguson",
+    "Zendaya"
+   ],
+   "tags": [
+    "epic",
+    "space",
+    "thrilling"
+   ],
+   "emoji": "🏜️",
+   "description": "A noble heir must survive on the most dangerous planet in the universe."
+  },
+  {
+   "id": "oppenheimer",
+   "title": "Oppenheimer",
+   "year": 2023,
+   "genres": [
+    "Drama",
+    "History",
+    "Thriller"
+   ],
+   "runtime": 180,
+   "rating": 8.3,
+   "director": "Christopher Nolan",
+   "cast": [
+    "Cillian Murphy",
+    "Emily Blunt",
+    "Robert Downey Jr."
+   ],
+   "tags": [
+    "epic",
+    "intense",
+    "biopic"
+   ],
+   "emoji": "💥",
+   "description": "The physicist J. Robert Oppenheimer leads the race to build the atomic bomb."
+  },
+  {
+   "id": "barbie",
+   "title": "Barbie",
+   "year": 2023,
+   "genres": [
+    "Comedy",
+    "Fantasy"
+   ],
+   "runtime": 114,
+   "rating": 6.8,
+   "director": "Greta Gerwig",
+   "cast": [
+    "Margot Robbie",
+    "Ryan Gosling",
+    "America Ferrera"
+   ],
+   "tags": [
+    "feel-good",
+    "crowd-pleaser",
+    "quirky"
+   ],
+   "emoji": "💖",
+   "description": "Barbie leaves her perfect plastic world for the real one."
+  },
+  {
+   "id": "the-social-network",
+   "title": "The Social Network",
+   "year": 2010,
+   "genres": [
+    "Drama",
+    "Biography"
+   ],
+   "runtime": 120,
+   "rating": 7.8,
+   "director": "David Fincher",
+   "cast": [
+    "Jesse Eisenberg",
+    "Andrew Garfield",
+    "Justin Timberlake"
+   ],
+   "tags": [
+    "biopic",
+    "tech"
+   ],
+   "emoji": "💻",
+   "description": "The founding of Facebook, and the lawsuits that followed it."
+  },
+  {
+   "id": "pulp-fiction",
+   "title": "Pulp Fiction",
+   "year": 1994,
+   "genres": [
+    "Crime",
+    "Drama"
+   ],
+   "runtime": 154,
+   "rating": 8.9,
+   "director": "Quentin Tarantino",
+   "cast": [
+    "John Travolta",
+    "Uma Thurman",
+    "Samuel L. Jackson"
+   ],
+   "tags": [
+    "classic",
+    "dark-comedy"
+   ],
+   "emoji": "🍔",
+   "description": "Intertwined stories of Los Angeles criminals, told out of order."
+  },
+  {
+   "id": "shawshank",
+   "title": "The Shawshank Redemption",
+   "year": 1994,
+   "genres": [
+    "Drama"
+   ],
+   "runtime": 142,
+   "rating": 9.3,
+   "director": "Frank Darabont",
+   "cast": [
+    "Tim Robbins",
+    "Morgan Freeman"
+   ],
+   "tags": [
+    "emotional",
+    "classic",
+    "hope"
+   ],
+   "emoji": "🔨",
+   "description": "A banker sentenced to life in prison finds hope and friendship."
+  },
+  {
+   "id": "amelie",
+   "title": "Amélie",
+   "year": 2001,
+   "genres": [
+    "Romance",
+    "Comedy"
+   ],
+   "runtime": 122,
+   "rating": 8.3,
+   "director": "Jean-Pierre Jeunet",
+   "cast": [
+    "Audrey Tautou",
+    "Mathieu Kassovitz"
+   ],
+   "tags": [
+    "feel-good",
+    "date-night",
+    "quirky"
+   ],
+   "emoji": "🍓",
+   "description": "A shy Parisian waitress secretly improves the lives of the people around her."
+  },
+  {
+   "id": "train-to-busan",
+   "title": "Train to Busan",
+   "year": 2016,
+   "genres": [
+    "Horror",
+    "Action",
+    "Thriller"
+   ],
+   "runtime": 118,
+   "rating": 7.6,
+   "director": "Yeon Sang-ho",
+   "cast": [
+    "Gong Yoo",
+    "Ma Dong-seok",
+    "Jung Yu-mi"
+   ],
+   "tags": [
+    "thrilling",
+    "scary",
+    "zombies",
+    "crowd-pleaser"
+   ],
+   "emoji": "🚄",
+   "description": "Passengers fight for survival on a train during a zombie outbreak."
+  },
+  {
+   "id": "3-idiots",
+   "title": "3 Idiots",
+   "year": 2009,
+   "genres": [
+    "Comedy",
+    "Drama"
+   ],
+   "runtime": 170,
+   "rating": 8.4,
+   "director": "Rajkumar Hirani",
+   "cast": [
+    "Aamir Khan",
+    "R. Madhavan",
+    "Sharman Joshi",
+    "Kareena Kapoor"
+   ],
+   "tags": [
+    "feel-good",
+    "crowd-pleaser",
+    "college"
+   ],
+   "emoji": "🎓",
+   "description": "Two friends search for a long-lost college companion who changed their lives."
+  },
+  {
+   "id": "rrr",
+   "title": "RRR",
+   "year": 2022,
+   "genres": [
+    "Action",
+    "Drama",
+    "History"
+   ],
+   "runtime": 182,
+   "rating": 7.8,
+   "director": "S. S. Rajamouli",
+   "cast": [
+    "N. T. Rama Rao Jr.",
+    "Ram Charan",
+    "Alia Bhatt"
+   ],
+   "tags": [
+    "epic",
+    "crowd-pleaser",
+    "thrilling",
+    "music"
+   ],
+   "emoji": "🐅",
+   "description": "Two revolutionaries form an unlikely friendship in 1920s India."
+  },
+  {
+   "id": "dangal",
+   "title": "Dangal",
+   "year": 2016,
+   "genres": [
+    "Drama",
+    "Sport",
+    "Biography"
+   ],
+   "runtime": 161,
+   "rating": 8.3,
+   "director": "Nitesh Tiwari",
+   "cast": [
+    "Aamir Khan",
+    "Fatima Sana Shaikh",
+    "Sanya Malhotra"
+   ],
+   "tags": [
+    "feel-good",
+    "emotional",
+    "sports"
+   ],
+   "emoji": "🤼",
+   "description": "A former wrestler trains his daughters to become world-class champions."
+  },
+  {
+   "id": "paddington-2",
+   "title": "Paddington 2",
+   "year": 2017,
+   "genres": [
+    "Comedy",
+    "Family",
+    "Adventure"
+   ],
+   "runtime": 103,
+   "rating": 7.8,
+   "director": "Paul King",
+   "cast": [
+    "Ben Whishaw",
+    "Hugh Grant",
+    "Sally Hawkins"
+   ],
+   "tags": [
+    "feel-good",
+    "family",
+    "crowd-pleaser"
+   ],
+   "emoji": "🧸",
+   "description": "Paddington is framed for a theft and lands in prison."
+  },
+  {
+   "id": "superbad",
+   "title": "Superbad",
+   "year": 2007,
+   "genres": [
+    "Comedy"
+   ],
+   "runtime": 113,
+   "rating": 7.6,
+   "director": "Greg Mottola",
+   "cast": [
+    "Jonah Hill",
+    "Michael Cera",
+    "Emma Stone"
+   ],
+   "tags": [
+    "crowd-pleaser",
+    "college",
+    "party"
+   ],
+   "emoji": "🍻",
+   "description": "Two best friends try to make their last high-school party count."
+  },
+  {
+   "id": "jurassic-park",
+   "title": "Jurassic Park",
+   "year": 1993,
+   "genres": [
+    "Adventure",
+    "Sci-Fi",
+    "Thriller"
+   ],
+   "runtime": 127,
+   "rating": 8.2,
+   "director": "Steven Spielberg",
+   "cast": [
+    "Sam Neill",
+    "Laura Dern",
+    "Jeff Goldblum"
+   ],
+   "tags": [
+    "thrilling",
+    "classic",
+    "crowd-pleaser",
+    "dinosaurs"
+   ],
+   "emoji": "🦖",
+   "description": "A theme park of cloned dinosaurs breaks down during a preview tour."
+  },
+  {
+   "id": "back-to-the-future",
+   "title": "Back to the Future",
+   "year": 1985,
+   "genres": [
+    "Sci-Fi",
+    "Comedy",
+    "Adventure"
+   ],
+   "runtime": 116,
+   "rating": 8.5,
+   "director": "Robert Zemeckis",
+   "cast": [
+    "Michael J. Fox",
+    "Christopher Lloyd"
+   ],
+   "tags": [
+    "feel-good",
+    "classic",
+    "crowd-pleaser",
+    "time-travel"
+   ],
+   "emoji": "⏰",
+   "description": "A teenager is accidentally sent 30 years into the past in a time-travelling DeLorean."
+  }
+ ]
+}
