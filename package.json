@@ -11,7 +11,7 @@
     "drift-sim": "node bench/drift-sim.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "license": "MIT",
   "dependencies": {

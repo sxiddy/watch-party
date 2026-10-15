@@ -24,12 +24,27 @@ function createRoom() {
 
 // ---------- HTTP ----------
 
+// The pages can be served from somewhere else (the Vercel copy), so those
+// origins are allowed to call the API and open a socket. Comma-separated.
+const ALLOWED = (process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
+
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', 1); // Render sits behind a proxy; needed for per-IP limits
 app.use(express.json({ limit: '1mb' }));
 app.use((req, res, next) => {
   res.set('X-Content-Type-Options', 'nosniff');
-  res.set('Referrer-Policy', 'same-origin');
+  res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  const origin = req.headers.origin;
+  if (origin && ALLOWED.includes(origin) && req.path.startsWith('/api/')) {
+    res.set('Access-Control-Allow-Origin', origin);
+    res.set('Vary', 'Origin');
+    if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Methods', 'GET, POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      return res.sendStatus(204);
+    }
+  }
   next();
 });
 
@@ -107,7 +122,7 @@ const io = new Server(server, {
   pingInterval: 5000,
   pingTimeout: 6000,
   maxHttpBufferSize: 1e6,
-  cors: { origin: process.env.CORS_ORIGIN || false },
+  cors: { origin: ALLOWED.length ? ALLOWED : false },
 });
 
 io.on('connection', socket => {

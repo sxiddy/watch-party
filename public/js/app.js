@@ -4,6 +4,15 @@
   const net = new Net();
   let entering = false;
 
+  // The free server sleeps when nobody's around and takes up to a minute to wake.
+  // Poke it as soon as the page opens, and say so if it's slow, instead of
+  // letting the first click look broken.
+  if (window.BR_SERVER) {
+    let awake = false;
+    const slow = setTimeout(() => { if (!awake) toast('Waking the server up. Free hosting naps, give it up to a minute.'); }, 2500);
+    fetch(apiUrl('/api/health')).then(() => { awake = true; clearTimeout(slow); }).catch(() => {});
+  }
+
   function codeFromPath() {
     const m = location.pathname.match(/^\/r\/([A-Za-z0-9]{4,8})/);
     return m ? m[1].toUpperCase() : null;
@@ -42,7 +51,7 @@
       const d = openDialog('#dlg-name');
       const input = $('#name-input');
       input.value = Identity.savedName();
-      fetch('/api/rooms/' + code).then(r => r.json()).then(info => {
+      fetch(apiUrl('/api/rooms/' + code)).then(r => r.json()).then(info => {
         $('#name-room-line').textContent = info.exists
           ? `${info.host || 'Someone'} invited you to room ${code}${info.nowShowing ? `, now showing ${info.nowShowing}` : ''}. ${info.people} here so far.`
           : `Room ${code} doesn’t seem to exist any more.`;
@@ -65,7 +74,7 @@
     if (!name) { $('#land-name').focus(); $('#land-error').textContent = 'Put a name in first, so your friends know who you are.'; return; }
     $('#btn-create').disabled = true;
     try {
-      const r = await fetch('/api/rooms', { method: 'POST' });
+      const r = await fetch(apiUrl('/api/rooms'), { method: 'POST' });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'failed');
       history.pushState(null, '', '/r/' + data.code);

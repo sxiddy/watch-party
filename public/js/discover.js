@@ -8,7 +8,7 @@
   let lastQuery = '';
   const detailsCache = new Map();
 
-  const api = (url) => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  const api = (url) => fetch(apiUrl(url)).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 
   const isFree = m => !!(m.src || m.archive);
   const metaLine = m => [m.year, m.runtime ? `${Math.floor(m.runtime / 60) ? Math.floor(m.runtime / 60) + 'h ' : ''}${m.runtime % 60}m` : null, m.rating ? '★ ' + m.rating : null].filter(Boolean).join(' · ');

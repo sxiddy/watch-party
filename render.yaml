@@ -1,0 +1,19 @@
+# The sync server (Express + socket.io). The pages are also served from here,
+# so this URL works on its own too; the Vercel copy just points at it.
+services:
+  - type: web
+    name: watchpartyvinnovate-sync
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        value: https://watchpartyvinnovate.vercel.app
+      - key: TMDB_REGION
+        value: IN
+      - key: TMDB_API_KEY
+        sync: false

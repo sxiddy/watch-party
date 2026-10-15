@@ -40,7 +40,7 @@
 
     connect() {
       if (this.socket) return;
-      this.socket = io({ transports: ['websocket', 'polling'], reconnectionDelay: 400, reconnectionDelayMax: 4000 });
+      this.socket = io(window.BR_SERVER || undefined, { transports: ['websocket', 'polling'], reconnectionDelay: 400, reconnectionDelayMax: 4000 });
       const s = this.socket;
       s.on('connect', () => {
         this.setState('connected');

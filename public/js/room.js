@@ -189,7 +189,7 @@
     pv.replaceChildren();
     if (m.tmdbId) {
       try {
-        const d = await fetch('/api/movies/' + m.tmdbId).then(r => r.json());
+        const d = await fetch(apiUrl('/api/movies/' + m.tmdbId)).then(r => r.json());
         const list = d.providers ? (d.providers.stream.length ? d.providers.stream : d.providers.rent) : [];
         if (list.length) pv.replaceChildren(h('span.k', d.providers.stream.length ? 'Streaming on' : 'Rent it on'), ...list.slice(0, 6).map(p => h('img', { src: p.logo, alt: p.name, title: p.name })));
       } catch (e) { /* fine without */ }
@@ -572,7 +572,7 @@
     if (id === 'mine') { S.cues = parseVtt(S._mineVtt); return; }
     const t = captionTracks().find(x => x.id === id);
     try {
-      const text = await fetch(t.src).then(r => { if (!r.ok) throw new Error(); return r.text(); });
+      const text = await fetch(apiUrl(t.src)).then(r => { if (!r.ok) throw new Error(); return r.text(); });
       if (S.ccTrack === id) S.cues = parseVtt(text);
     } catch (e) { toast('Couldn’t load those subtitles', 'bad'); }
   }
@@ -885,7 +885,7 @@
     body.replaceChildren(h('p', 'Counting…'));
     openDialog('#dlg-recap');
     try {
-      const r = await fetch(`/api/rooms/${S.code}/recap`).then(x => x.json());
+      const r = await fetch(apiUrl(`/api/rooms/${S.code}/recap`)).then(x => x.json());
       body.replaceChildren(
         h('h3', 'Tonight so far'),
         h('ul.recap',
