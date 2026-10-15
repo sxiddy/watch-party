@@ -10,7 +10,20 @@
 const { titleSimilarity, srtToVtt } = require('./util');
 const movies = require('./movies');
 
-const cache = new Map();
+const cache = new Map(); // small LRU: Map keeps insertion order
+const CACHE_MAX = 500;
+// In the US a film's copyright runs 95 years, so anything from 1930 or
+// earlier is public domain as of 2026. Newer films only get an Archive
+// lookup when our own catalog says that particular film is public domain.
+const PD_CUTOFF_YEAR = new Date().getFullYear() - 96;
+
+// archive.org gives lengths as "5400.12" or "1:30:00"
+function seconds(len) {
+  if (!len) return 0;
+  const s = String(len);
+  if (s.includes(':')) return s.split(':').reduce((t, x) => t * 60 + (parseFloat(x) || 0), 0);
+  return parseFloat(s) || 0;
+}
 const BAD_WORDS = /\b(trailer|dub|dubbed|doblada|doblado|español|espanol|latino|subtitulado|teaser|clip|scene|review|colorized|reaction)\b/i;
 
 async function getJson(url, ms = 7000) {
@@ -19,7 +32,7 @@ async function getJson(url, ms = 7000) {
   return res.json();
 }
 
-async function archiveLookup(title, year, runtimeMin) {
+async function archiveLookup(title, year, runtimeMin, note) {
   const words = title.replace(/[^\w\s]/g, ' ').trim().split(/\s+/).slice(0, 6).join(' ');
   if (!words) return null;
   const q = `title:(${words}) AND mediatype:movies AND collection:(feature_films OR moviesandfilms OR silent_films OR film_noir OR animationandcartoons)`;
@@ -39,12 +52,13 @@ async function archiveLookup(title, year, runtimeMin) {
     const lang = [].concat(doc.language || []).join(' ').toLowerCase();
     if (lang && !/en|english/.test(lang)) score -= 0.3;
     score += Math.min(0.3, Math.log10((doc.downloads || 1) + 1) / 20);
-    if (score >= 0.6) cands.push({ score, id: doc.identifier, title: t });
+    if (score >= 0.6) cands.push({ score, id: doc.identifier, title: t, year: y });
   }
   cands.sort((a, b) => b.score - a.score);
   // feature films only: skip 3-minute clips that happen to share the title
   const minLen = runtimeMin ? Math.min(runtimeMin * 0.6, 40) * 60 : 25 * 60;
   for (const best of cands.slice(0, 4)) {
+    best.note = note || `Public domain (${best.year || year}), free on the Internet Archive`;
     const r = await archiveFiles(best, minLen);
     if (r) return r;
   }
@@ -54,11 +68,13 @@ async function archiveLookup(title, year, runtimeMin) {
 async function archiveFiles(best, minLen) {
   const meta = await getJson('https://archive.org/metadata/' + encodeURIComponent(best.id));
   const files = meta.files || [];
-  const mp4s = files.filter(f => /\.mp4$/i.test(f.name) && !/sample|trailer/i.test(f.name));
+  const mp4s = files.filter(f => /\.mp4$/i.test(f.name) && !/sample|trailer|x265|hevc|10bit/i.test(f.name)
+    && (!f.length || seconds(f.length) >= minLen)); // no length listed: let the size check below decide
   if (!mp4s.length) return null;
   // prefer the browser-friendly h.264 derivative, then the smallest reasonable file
   mp4s.sort((a, b) => (/h\.264|512kb/i.test(b.format || b.name) - /h\.264|512kb/i.test(a.format || a.name)) || ((+a.size || 0) - (+b.size || 0)));
-  const file = mp4s.find(f => (+f.size || 0) > 20e6) || mp4s[0];
+  const file = mp4s.find(f => seconds(f.length) >= minLen || (!f.length && (+f.size || 0) > 100e6));
+  if (!file) return null;
   const dl = name => `https://archive.org/download/${encodeURIComponent(best.id)}/${name.split('/').map(encodeURIComponent).join('/')}`;
   const captions = files.filter(f => /\.(srt|vtt)$/i.test(f.name) && !/\.asr\./i.test(f.name)).slice(0, 4).map(f => ({
     src: '/api/captions?u=' + encodeURIComponent(dl(f.name)),
@@ -67,8 +83,8 @@ async function archiveFiles(best, minLen) {
   }));
   return {
     kind: 'file', src: dl(file.name), sourceLabel: 'Internet Archive', archiveId: best.id,
-    duration: parseFloat(file.length) || 0, captions,
-    note: 'Public-domain copy, free and legal',
+    duration: seconds(file.length), captions,
+    note: best.note,
     page: 'https://archive.org/details/' + best.id,
   };
 }
@@ -76,18 +92,21 @@ async function archiveFiles(best, minLen) {
 async function findSources({ title, year, tmdbId, catalogId }) {
   const ck = [title, year, tmdbId, catalogId].join('|');
   const hit = cache.get(ck);
-  if (hit && Date.now() - hit.at < 60 * 60_000) return hit.data;
+  if (hit && Date.now() - hit.at < 60 * 60_000) { cache.delete(ck); cache.set(ck, hit); return hit.data; }
 
-  const out = { options: [], providers: null, trailer: null };
+  const out = { options: [], providers: null, trailer: null, region: movies.REGION };
   const bundled = movies.localMovies.find(m => (catalogId && m.id === catalogId) || (m.src && titleSimilarity(title, m.title) > 0.9));
   if (bundled && bundled.src) {
     out.options.push({ kind: 'file', src: bundled.src, sourceLabel: 'Free film', note: 'Openly licensed, streams instantly', captions: bundled.captions || [] });
   }
 
   const jobs = [];
-  if (!bundled?.src) {
+  const knownPd = !!bundled?.archive;
+  const oldEnough = year && year <= PD_CUTOFF_YEAR;
+  if (!bundled?.src && (knownPd || oldEnough)) {
     const q = bundled?.archive?.query || title;
-    jobs.push(archiveLookup(q, bundled?.archive?.year || year, bundled?.runtime).then(a => { if (a) out.options.push(a); }).catch(e => console.warn('[archive]', e.message)));
+    const note = knownPd ? 'Public domain, free on the Internet Archive' : null;
+    jobs.push(archiveLookup(q, bundled?.archive?.year || year, bundled?.runtime, note).then(a => { if (a) out.options.push(a); }).catch(e => console.warn('[archive]', e.message)));
   }
   if (tmdbId && movies.enabled()) {
     jobs.push(movies.details(tmdbId).then(d => {
@@ -98,6 +117,7 @@ async function findSources({ title, year, tmdbId, catalogId }) {
   await Promise.all(jobs);
   if (out.trailer) out.options.push(out.trailer);
   cache.set(ck, { at: Date.now(), data: out });
+  if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value);
   return out;
 }
 
@@ -108,9 +128,18 @@ async function captionsProxy(u) {
   if (url.hostname !== 'archive.org' && !url.hostname.endsWith('.archive.org')) throw new Error('host not allowed');
   const res = await fetch(url, { signal: AbortSignal.timeout(8000), redirect: 'follow' });
   if (!res.ok) throw new Error('captions ' + res.status);
-  const text = await res.text();
-  if (text.length > 2_000_000) throw new Error('too big');
-  return srtToVtt(text);
+  // read it in chunks and stop at 2 MB, rather than trusting the size header
+  const reader = res.body.getReader();
+  const chunks = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.length;
+    if (size > 2_000_000) { reader.cancel(); throw new Error('too big'); }
+    chunks.push(value);
+  }
+  return srtToVtt(Buffer.concat(chunks).toString('utf8'));
 }
 
 module.exports = { findSources, archiveLookup, captionsProxy };

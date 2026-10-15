@@ -183,6 +183,7 @@ async function details(tmdbId) {
   m.trailer = trailer ? { ytId: trailer.key, name: trailer.name } : null;
   const prov = d['watch/providers']?.results?.[REGION];
   m.providers = prov ? {
+    region: REGION,
     link: prov.link,
     stream: (prov.flatrate || []).map(p => ({ name: p.provider_name, logo: IMG + 'w92' + p.logo_path })),
     rent: (prov.rent || []).map(p => ({ name: p.provider_name, logo: IMG + 'w92' + p.logo_path })),
@@ -210,4 +211,4 @@ async function warmUp() {
   console.log(`[movies] TMDB on, ${pool.size} titles warmed for fuzzy search`);
 }
 
-module.exports = { enabled, home, search, discover, details, recommendations, warmUp, localMovies, GENRE_IDS };
+module.exports = { REGION, enabled, home, search, discover, details, recommendations, warmUp, localMovies, GENRE_IDS };
