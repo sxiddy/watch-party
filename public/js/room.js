@@ -59,7 +59,7 @@
     onPlayback(snap.playback, true);
     renderAll();
     // late joiners and refreshes get the subtitles the host shared
-    if (S.sharedCaptions && S.sharedCaptions.itemId === S.playback?.itemId) useRoomCaptions();
+    if (S.sharedCaptions && S.sharedCaptions.itemId === S.playback?.itemId && !(S.ccChosen && S.ccTrack === 'off')) useRoomCaptions();
   }
 
   function renderAll() {
@@ -90,7 +90,7 @@
     if (!silent && prev && pb.changedBy !== S.me) announce(pb, prev);
     if (pb.playing && pb.reason !== 'buffering') hideNotice(); // whatever we were waiting on is over
     // the 3-2-1 button only makes sense while stopped
-    $('#btn-countdown').hidden = !!pb.playing;
+    $('#btn-countdown').hidden = !!pb.playing || !pb.media;
     // The overlay is normally hidden by the per-frame loop, which browsers pause
     // in background tabs. Make sure it can't be left showing "1" there.
     clearTimeout(S._cdHideT);
@@ -249,8 +249,10 @@
     if (!net || !sync) return;
     const a = sync.adapter;
     const lat = pendingLatency.splice(0, pendingLatency.length);
+    const loading = !!(S.playback?.media && sync.loading);
     net.request('status', {
-      drift: a && a.kind !== 'companion' && S.playback?.playing ? sync.drift : 0,
+      loading,
+      drift: loading ? null : a && a.kind !== 'companion' && S.playback?.playing ? sync.drift : 0,
       rtt: net.clock.rtt,
       latency: lat,
     });
@@ -397,6 +399,7 @@
     $('#set-control').onchange = e => net.request('settings', { controlMode: e.target.value });
     $('#set-buffer').onchange = e => net.request('settings', { waitForBuffering: e.target.checked });
     $('#set-rewind').onchange = e => net.request('settings', { autoRewind: e.target.checked });
+    $('#set-lock').onchange = e => net.request('settings', { locked: e.target.checked });
     $('#set-cc').onchange = e => net.request('settings', { captionsForAll: e.target.checked });
     $$('[data-im]').forEach(b => { b.onclick = () => { net.request('intermission:start', { minutes: +b.dataset.im }); $('#dlg-settings').close(); }; });
 
@@ -404,7 +407,7 @@
     $('#cc-file').onchange = async e => {
       const f = e.target.files[0];
       if (!f) return;
-      let text = await f.text();
+      let text = (await f.text()).replace(/^﻿/, '');
       if (!/^﻿?WEBVTT/.test(text)) text = srtToVtt(text);
       if (canControl()) {
         const r = await net.request('captions:share', { name: f.name, vtt: text });
@@ -412,7 +415,7 @@
           S.sharedCaptions = { name: f.name, vtt: text, by: S.me, itemId: S.playback?.itemId };
           useRoomCaptions();
           toast('Shared with the room');
-        } else useMyCaptions(text);
+        } else { useMyCaptions(text); toast('Couldn’t share that file, so the subtitles are on just for you', 'bad'); }
       } else { useMyCaptions(text); toast('Subtitles on (just for you)'); }
       $('#dlg-cc').close();
       e.target.value = '';
@@ -635,7 +638,9 @@
     if (S.ccChosen) return;
     const tracks = captionTracks();
     if (S.settings.captionsForAll && tracks.length) chooseTrack(tracks[0].id).then(() => { S.ccChosen = false; });
-    else if (!S.settings.captionsForAll && S.ccTrack !== 'room') { S.ccTrack = 'off'; S.cues = []; $('#captions').textContent = ''; }
+    // shared subtitles from the previous video don't carry over to this one
+    const roomOk = S.ccTrack === 'room' && S.sharedCaptions && S.sharedCaptions.itemId === S.playback?.itemId;
+    if (!S.settings.captionsForAll && !roomOk) { S.ccTrack = 'off'; S.cues = []; $('#captions').textContent = ''; }
     $('#btn-cc').classList.toggle('on', S.ccTrack !== 'off');
   }
 
@@ -651,6 +656,7 @@
     if (!m.connected) return ['off', 'stepped out'];
     if (m.status.buffering) return ['buf', 'buffering'];
     if (!m.status.mediaReady) return ['wait', 'picking their file'];
+    if (m.status.loading) return ['buf', 'loading'];
     if (m.status.away) return ['away', 'tab in background'];
     return ['ok', 'watching'];
   }
@@ -856,7 +862,7 @@
   function renderSync() {
     if (!sync) return;
     const lat = S.stats?.latency;
-    $('#s-drift').textContent = S.playback?.playing && sync.adapter?.kind !== 'companion' ? Math.round(sync.drift * 1000) + ' ms' : '-';
+    $('#s-drift').textContent = sync.loading ? 'loading…' : S.playback?.playing && sync.adapter?.kind !== 'companion' ? Math.round(sync.drift * 1000) + ' ms' : '-';
     $('#s-rtt').textContent = net.clock.ready ? Math.round(net.clock.rtt) + ' ms' : '…';
     $('#s-p95').textContent = lat && lat.n ? Math.round(lat.p95) + ' ms' : (S.latency.length ? Math.round(percentile(S.latency, 95)) + ' ms' : '-');
     $('#s-p50').textContent = lat && lat.n ? Math.round(lat.p50) + ' ms' : '-';
@@ -868,8 +874,9 @@
     $('#sync-rows').replaceChildren(...S.members.filter(m => m.connected).map(m => {
       const [cls, label] = statusOf(m);
       const dms = Math.round((m.status.drift || 0) * 1000);
+      const showDrift = S.playback?.playing && m.status.drift != null && !m.status.loading;
       return h('tr', h('td', { style: { color: m.color } }, m.name), h('td', m.status.rtt ? m.status.rtt + ' ms' : '-'),
-        h('td' + (Math.abs(dms) > 500 ? '.bad' : ''), S.playback?.playing ? dms + ' ms' : '-'), h('td.fine', label));
+        h('td' + (showDrift && Math.abs(dms) > 500 ? '.bad' : ''), showDrift ? dms + ' ms' : '-'), h('td.fine', label));
     }));
 
     // drift chart, last 60 s
@@ -921,6 +928,7 @@
     $('#set-control').value = S.settings.controlMode;
     $('#set-buffer').checked = S.settings.waitForBuffering;
     $('#set-rewind').checked = S.settings.autoRewind;
+    $('#set-lock').checked = !!S.settings.locked;
     $('#set-cc').checked = S.settings.captionsForAll;
   }
 

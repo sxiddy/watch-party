@@ -4,7 +4,7 @@ A watch-party site. Make a room, send your friends the link (or let them scan th
 
 Built for the Watch Party task: synced playback for 10+ people, movie discovery, reactions, chat, a shared queue, polls, host transfer, drift correction, and solid handling of late joins, reconnects and people clicking at the same time.
 
-![status](https://img.shields.io/badge/tests-34%20passing-3fa796) ![p95](https://img.shields.io/badge/control%20p95-2%20ms%20same%20machine%20%C2%B7%2032%20ms%20sim.%20Wi--Fi-d9472b) ![drift](https://img.shields.io/badge/drift%20after%20correction-%E2%89%A4%20461%20ms-f2b33d)
+![status](https://img.shields.io/badge/tests-42%20passing-3fa796) ![p95](https://img.shields.io/badge/control%20p95-2%20ms%20same%20machine%20%C2%B7%2032%20ms%20sim.%20Wi--Fi-d9472b) ![drift](https://img.shields.io/badge/drift%20after%20correction-%E2%89%A4%20461%20ms-f2b33d)
 
 **Try it live: https://watchpartyvinnovate.vercel.app**. Open it, make a room, then open the invite link on your phone or in a second tab. It's on free hosting that sleeps when nobody's using it, so the first visit can take up to a minute to wake the server (the page tells you when that's happening).
 
@@ -20,7 +20,7 @@ Open it in two browser tabs (or two devices on the same Wi-Fi via `http://<your-
 **Optional:** copy `.env.example` to `.env` and add a free [TMDB](https://www.themoviedb.org/settings/api) key. You then get real posters, trending rows, "where is it streaming in India", trailers and smarter recommendations. Without a key it uses the ~60-movie catalog in `public/data/movies.json`, and everything still works.
 
 ```bash
-npm test           # 34 tests: room rules, permissions, sync math, fuzzy search, a 12-person integration run
+npm test           # 42 tests: room rules, permissions, sync math, fuzzy search, a 12-person integration run
 npm run bench      # propagation latency with 15 bot viewers
 npm run drift-sim  # drift correction against misbehaving fake players
 ```
@@ -47,7 +47,7 @@ So for something like *Ted 2*: it's on a streaming service, so the room uses com
 - Rooms with a 6-letter code (no 0/O/1/I mix-ups), an invite link and a QR code
 - Synced play, pause and seek. The server holds the official state and every client follows it
 - Movie discovery with categories, filters and fuzzy search
-- Emoji reactions, live chat, a shared queue with votes, polls and host transfer (plus co-hosts, and the host can remove someone)
+- Emoji reactions, live chat, a shared queue with votes, polls and host transfer (plus co-hosts, and the host can remove someone or lock the room)
 - Drift detection and correction: speed nudging, then a jump if needed
 - Late joins get a full snapshot. Reconnects keep your identity and role. Clashing clicks are resolved the same way for everyone
 
@@ -113,12 +113,20 @@ Before submitting, I had the project reviewed strictly against the brief. The ma
 - **Spam:** added a general rate limit for every action, plus a way for the host to remove someone.
 - **Overstated numbers in the docs:** drift is now reported as a range over 6 runs instead of the best one, the network simulation delays both directions, and the "same machine" test is described as what it is.
 
+A second round of review found more ways one person could mess with a room, fixed in the next pass:
+- **One tab could fill a room with "ghost" people** by rejoining under new ids without leaving, which also let it vote twice on rewinds. Now one connection is one person, joins are rate-limited, and new people per address are capped.
+- **In companion mode a guest could set the film's length** and stop the shared clock. Only the host's side can set a length now, and companion rooms never get one.
+- **A guest could set the room's p95** by reporting fake 5-second latencies, and **fake buffering could pause the room on a loop**. Both are capped now (see [docs/LATENCY.md](docs/LATENCY.md)).
+- **A seek that never finished froze that viewer for good**, while the Sync tab said they were fine. It now retries, then reloads, and shows "loading" meanwhile.
+- **Searching a director or actor** ("nolan", "tom hanks") on the live site found documentaries about them. It now finds their films.
+- Smaller things: subtitle files starting with a byte-order mark, old subtitles staying "on" after switching videos, and the 3·2·1 button showing with nothing loaded.
+
 ## Known limits
 
 - Rooms live in memory, so a server restart ends them (Redis would fix this). On the free Render plan that also happens when the server goes to sleep.
 - YouTube can only change speed in 0.25× steps, so YouTube rooms correct drift by seeking. Still under 500 ms after correction, but less smooth than normal video.
 - Companion mode is synced by people, not by code. The site can't control the Netflix app.
-- Removing someone blocks their tab, not their device. They could come back from a fresh tab with the invite link.
+- Removing someone blocks their tab and their internet address. Someone on another network (say, mobile data) could still come back, which is what the room lock is for. On your own laptop (`npm start`) the address check is off so you can test with many tabs.
 - Not tested yet on two physical devices on the same Wi-Fi (the in-app Sync tab will show the numbers when you try it).
 
 ## Credits

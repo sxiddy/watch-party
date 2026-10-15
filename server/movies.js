@@ -181,7 +181,8 @@ async function wikiSearch(q) {
     const better = s.query?.searchinfo?.suggestion;
     if (better) pages = await run(better.replace(/\s*film$/i, ''));
   }
-  return pages.map(fromWiki);
+  // a real film has a year; "Open-source film" and other topic pages don't
+  return pages.map(fromWiki).filter(m => m.year);
 }
 
 async function search(q) {
@@ -211,14 +212,17 @@ async function search(q) {
   }
 
   let results = [];
-  try {
-    const d = await tmdb('/search/movie', { query: q, include_adult: false });
-    results = d.results.map(fromTmdb);
-  } catch (e) { /* fall through to fuzzy */ }
+  const [titles, byPerson] = await Promise.all([
+    tmdb('/search/movie', { query: q, include_adult: false }).catch(() => null),
+    personFilms(q),
+  ]);
+  if (titles) results = titles.results.map(fromTmdb);
+  const goodTitle = q => results.some(m => Fuzzy.search(Fuzzy.buildIndex([m]), q, { threshold: 0.7 }).length);
 
-  // TMDB search isn't typo tolerant ("intrstellar" finds nothing), so when it
-  // comes back thin we ask our own fuzzy index what they probably meant.
-  if (results.length < 3) {
+  // TMDB search isn't typo tolerant ("intrstellar" finds nothing), so when
+  // nothing it found really matches we ask our own fuzzy index what they
+  // probably meant. Not when the query was a person's name.
+  if (!byPerson.length && !goodTitle(q)) {
     const guess = poolSearch(q, 3).map(h => h.item.title);
     for (const t of guess) {
       try {
@@ -238,10 +242,31 @@ async function search(q) {
   // Match quality plus a small popularity bonus, so "conjuring" puts The
   // Conjuring (2013, 11k votes) above an 1896 short whose title is exactly
   // "Conjuring", while "ted 2" still puts Ted 2 above the more popular Ted.
+  // Anything that doesn't match the query at all (a bad typo guess) is dropped.
   const ranked = Fuzzy.search(Fuzzy.buildIndex(merged), q, { threshold: 0.2 });
   const score = new Map(ranked.map(h => [h.item, h.score + Math.log10((h.item.votes || 0) + 1) * 0.12]));
-  merged.sort((a, b) => (score.get(b) ?? -1) - (score.get(a) ?? -1));
-  return merged.slice(0, 30);
+  const titled = merged.filter(m => score.has(m)).sort((a, b) => score.get(b) - score.get(a));
+  // "nolan", "tom hanks": their films first, then titles that mention them.
+  // A film called exactly what they typed still wins ("ted" is Ted, not Ted Danson).
+  const exact = titled.filter(m => Fuzzy.normalize(m.title) === Fuzzy.normalize(q));
+  const out = [...exact, ...byPerson.filter(m => !exact.some(x => x.tmdbId === m.tmdbId))];
+  for (const m of titled) if (!out.some(x => x.tmdbId === m.tmdbId)) out.push(m);
+  return out.slice(0, 30);
+}
+
+// If the query is clearly a director or actor, their best-known films.
+async function personFilms(q) {
+  try {
+    const d = await tmdb('/search/person', { query: q, include_adult: false });
+    const p = (d.results || []).find(x => ['Directing', 'Acting', 'Writing'].includes(x.known_for_department) && (x.popularity || 0) >= 2);
+    if (!p) return [];
+    // the name has to really be what they typed: "nolan" → Christopher Nolan, "inception" → nobody
+    const hit = Fuzzy.search(Fuzzy.buildIndex([{ title: p.name }]), q, { threshold: 0.75 });
+    if (!hit.length) return [];
+    const role = p.known_for_department === 'Acting' ? 'with_cast' : 'with_crew';
+    const f = await tmdb('/discover/movie', { [role]: p.id, sort_by: 'vote_count.desc', include_adult: false });
+    return (f.results || []).slice(0, 12).map(r => ({ ...fromTmdb(r), why: p.name }));
+  } catch (e) { return []; }
 }
 
 async function discover(f = {}) {

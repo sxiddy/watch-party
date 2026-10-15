@@ -45,6 +45,14 @@
     play() { return this.el.play(); }
     pause() { this.el.pause(); }
     seek(t) { try { this.el.currentTime = Math.max(0, t); } catch (e) { /* not seekable yet */ } }
+    // last resort for a seek the browser never finishes: load the file again at t
+    reload(t) {
+      const v = this.el, src = v.currentSrc || v.src;
+      this.seeking = false;
+      v.addEventListener('loadedmetadata', () => { try { v.currentTime = Math.max(0, t); } catch (e) { /* ignore */ } }, { once: true });
+      v.src = src;
+      v.load();
+    }
     setRate(r) { if (Math.abs(this.el.playbackRate - r) > 0.001) this.el.playbackRate = r; }
     set volume(v) { this.el.volume = v; }
     set muted(m) { this.el.muted = m; }
@@ -190,7 +198,8 @@
         // A late joiner's first seek can take seconds on a slow source. Seeking
         // again every tick (the target keeps moving) restarts the load each time
         // and it never catches up, so let a seek finish first.
-        if (a.seeking) return;
+        if (a.seeking) { this._unstick(a, exp); return; }
+        this._stuckTries = 0;
         const settling = performance.now() - this.lastSeekAt < 1500;
         if (!settling && Math.abs(a.currentTime - exp) > 0.3) this._seek(exp + this.ctl.seekLead, true);
         const p = a.play();
@@ -200,7 +209,9 @@
           });
         return;
       }
-      if (a.seeking || a.buffering) return;
+      if (a.seeking) { this._unstick(a, exp); return; }
+      this._stuckTries = 0;
+      if (a.buffering) return;
 
       const d = this.ctl.decide(a.currentTime, exp, true, a.canRate);
       this.drift = d.drift;
@@ -217,6 +228,25 @@
       } else {
         a.setRate(1);
       }
+    }
+
+    // Not showing the room's frame yet: still loading, or a seek is taking a while.
+    // The Sync tab says "loading" instead of pretending the drift is 0.
+    get loading() {
+      const a = this.adapter;
+      if (!a || a.kind === 'companion') return false;
+      return !a.ready || (a.seeking && performance.now() - this.lastSeekAt > 1500);
+    }
+
+    // A seek that never lands (seen on slow archive.org ranges) used to freeze
+    // that viewer for good. After 5 s, ask again for where the room is now;
+    // after two of those, reload the file at that point.
+    _unstick(a, exp) {
+      if (performance.now() - this.lastSeekAt < 5000) return;
+      this._stuckTries = (this._stuckTries || 0) + 1;
+      const target = exp + this.ctl.seekLead;
+      if (this._stuckTries > 2 && a.reload) { a.reload(target); this._stuckTries = 0; this.lastSeekAt = performance.now(); }
+      else this._seek(target, true);
     }
 
     _seek(t, count) {
