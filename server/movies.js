@@ -235,9 +235,12 @@ async function search(q) {
     seen.add(k);
     return true;
   });
+  // Match quality plus a small popularity bonus, so "conjuring" puts The
+  // Conjuring (2013, 11k votes) above an 1896 short whose title is exactly
+  // "Conjuring", while "ted 2" still puts Ted 2 above the more popular Ted.
   const ranked = Fuzzy.search(Fuzzy.buildIndex(merged), q, { threshold: 0.2 });
-  const order = new Map(ranked.map((h, i) => [h.item, i]));
-  merged.sort((a, b) => (order.has(a) ? order.get(a) : 999) - (order.has(b) ? order.get(b) : 999) || (b.votes || 0) - (a.votes || 0));
+  const score = new Map(ranked.map(h => [h.item, h.score + Math.log10((h.item.votes || 0) + 1) * 0.12]));
+  merged.sort((a, b) => (score.get(b) ?? -1) - (score.get(a) ?? -1));
   return merged.slice(0, 30);
 }
 
