@@ -187,7 +187,12 @@
       }
 
       if (a.paused) {
-        if (Math.abs(a.currentTime - exp) > 0.3) this._seek(exp + this.ctl.seekLead, true);
+        // A late joiner's first seek can take seconds on a slow source. Seeking
+        // again every tick (the target keeps moving) restarts the load each time
+        // and it never catches up, so let a seek finish first.
+        if (a.seeking) return;
+        const settling = performance.now() - this.lastSeekAt < 1500;
+        if (!settling && Math.abs(a.currentTime - exp) > 0.3) this._seek(exp + this.ctl.seekLead, true);
         const p = a.play();
         if (p && p.catch) p.then(() => { if (this.blocked) { this.blocked = false; this.hooks.onBlocked && this.hooks.onBlocked(false); } })
           .catch(err => {

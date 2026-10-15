@@ -16,7 +16,7 @@
     DEADBAND: 0.04,      // |drift| below 40 ms → do nothing
     SOFT_MAX: 0.40,      // 40–400 ms → nudge playbackRate
     GAIN: 0.9,           // rate correction per second of drift
-    MAX_RATE_DELTA: 0.12,// never speed up/slow down by more than 12 %
+    MAX_RATE_DELTA: 0.06,// at most 6 % faster/slower; past ~5 % voices start to sound off
     HYSTERESIS: 0.02,    // stop nudging once within 20 ms
   };
 

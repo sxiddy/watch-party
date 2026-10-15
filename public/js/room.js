@@ -58,7 +58,8 @@
     renderReactBar();
     onPlayback(snap.playback, true);
     renderAll();
-    if (S.sharedCaptions) loadCaptionsText(S.sharedCaptions.vtt);
+    // late joiners and refreshes get the subtitles the host shared
+    if (S.sharedCaptions && S.sharedCaptions.itemId === S.playback?.itemId) useRoomCaptions();
   }
 
   function renderAll() {
@@ -87,7 +88,7 @@
     sync.setState(pb);
     renderNowShowing();
     if (!silent && prev && pb.changedBy !== S.me) announce(pb, prev);
-    if (pb.reason === 'resume') hideNotice();
+    if (pb.playing && pb.reason !== 'buffering') hideNotice(); // whatever we were waiting on is over
     if (pb.reason === 'buffering') showNotice('Someone’s buffering, hang on a sec…');
   }
 
@@ -118,7 +119,14 @@
     const m = pb.media;
     const events = {
       onMeta: d => net.request('status', { duration: d, itemId: pb.itemId }),
-      onBuffer: b => net.request('status', { buffering: b }),
+      // Our own corrective seeks make the video "wait" for a moment too. Only
+      // tell the room if it's still stuck 1.5 s after the last seek.
+      onBuffer: b => {
+        clearTimeout(S._bufT);
+        if (!b) return net.request('status', { buffering: false });
+        const wait = Math.max(0, 1500 - (performance.now() - sync.lastSeekAt));
+        S._bufT = setTimeout(() => { if (sync.adapter && sync.adapter.buffering) net.request('status', { buffering: true }); }, wait);
+      },
       onEnded: () => net.request('media:ended', { itemId: S.playback.itemId }),
       onSeekTime: s => sync.ctl.recordSeekDuration(s),
       onError: msg => { toast(msg, 'bad'); },
@@ -186,12 +194,11 @@
     $('#comp-title').textContent = m.title;
     $('#comp-result').textContent = '';
     const pv = $('#comp-providers');
-    pv.replaceChildren();
+    pv.replaceChildren(Discover.whereToWatch(m, null));
     if (m.tmdbId) {
       try {
         const d = await fetch(apiUrl('/api/movies/' + m.tmdbId)).then(r => r.json());
-        const list = d.providers ? (d.providers.stream.length ? d.providers.stream : d.providers.rent) : [];
-        if (list.length) pv.replaceChildren(h('span.k', d.providers.stream.length ? 'Streaming on' : 'Rent it on'), ...list.slice(0, 6).map(p => h('img', { src: p.logo, alt: p.name, title: p.name })));
+        if (d.providers) pv.replaceChildren(Discover.whereToWatch(m, d.providers));
       } catch (e) { /* fine without */ }
     }
   }
@@ -372,12 +379,14 @@
       if (!f) return;
       let text = await f.text();
       if (!/^﻿?WEBVTT/.test(text)) text = srtToVtt(text);
-      loadCaptionsText(text);
-      S.ccTrack = 'mine'; S.ccChosen = true;
       if (canControl()) {
         const r = await net.request('captions:share', { name: f.name, vtt: text });
-        if (r.ok) toast('Shared with the room');
-      } else toast('Subtitles on (just for you)');
+        if (r.ok) {
+          S.sharedCaptions = { name: f.name, vtt: text, by: S.me, itemId: S.playback?.itemId };
+          useRoomCaptions();
+          toast('Shared with the room');
+        } else useMyCaptions(text);
+      } else { useMyCaptions(text); toast('Subtitles on (just for you)'); }
       $('#dlg-cc').close();
       e.target.value = '';
     };
@@ -557,16 +566,18 @@
   function renderCcList() {
     const list = captionTracks();
     const forced = S.settings.captionsForAll;
-    $('#cc-list').replaceChildren(
+    $('#cc-list').replaceChildren(...[
       h('label.row-opt.chk', h('input', { type: 'radio', name: 'cc', checked: S.ccTrack === 'off', onchange: () => chooseTrack('off') }), ' Off'),
       ...list.map(t => h('label.row-opt.chk', h('input', { type: 'radio', name: 'cc', checked: S.ccTrack === t.id, onchange: () => chooseTrack(t.id) }), ' ' + t.label)),
       forced ? h('p.fine', 'The host has turned subtitles on for everyone. You can still switch them off for yourself.') : null,
-      list.length ? null : h('p.fine', 'No subtitles came with this video. Load your own below.'));
+      list.length ? null : h('p.fine', 'No subtitles came with this video. Load your own below.'),
+    ].filter(Boolean));
   }
 
   async function chooseTrack(id) {
     S.ccTrack = id; S.ccChosen = true;
     $('#captions').textContent = '';
+    $('#btn-cc').classList.toggle('on', id !== 'off');
     if (id === 'off') { S.cues = []; return; }
     if (id === 'room') { S.cues = parseVtt(S.sharedCaptions.vtt); return; }
     if (id === 'mine') { S.cues = parseVtt(S._mineVtt); return; }
@@ -577,10 +588,19 @@
     } catch (e) { toast('Couldn’t load those subtitles', 'bad'); }
   }
 
-  function loadCaptionsText(text) {
+  // a file you loaded just for yourself
+  function useMyCaptions(text) {
     S._mineVtt = text;
+    S.ccTrack = 'mine'; S.ccChosen = true;
     S.cues = parseVtt(text);
-    autoCaptions();
+    $('#btn-cc').classList.add('on');
+  }
+
+  // the file the host shared with everyone; you can still switch it off
+  function useRoomCaptions() {
+    S.ccTrack = 'room'; S.ccChosen = false;
+    S.cues = parseVtt(S.sharedCaptions.vtt);
+    $('#btn-cc').classList.add('on');
   }
 
   // "captions together": host can force them on; shared files win
@@ -588,7 +608,7 @@
     if (S.ccChosen) return;
     const tracks = captionTracks();
     if (S.settings.captionsForAll && tracks.length) chooseTrack(tracks[0].id).then(() => { S.ccChosen = false; });
-    else if (!S.settings.captionsForAll) { S.ccTrack = 'off'; S.cues = []; $('#captions').textContent = ''; }
+    else if (!S.settings.captionsForAll && S.ccTrack !== 'room') { S.ccTrack = 'off'; S.cues = []; $('#captions').textContent = ''; }
     $('#btn-cc').classList.toggle('on', S.ccTrack !== 'off');
   }
 
@@ -631,6 +651,7 @@
     } else if (isHost()) {
       if (m.connected) items.push(h('button', { onclick: () => { net.request('host:transfer', { to: m.id }); close(); } }, `Make ${m.name} the host`));
       items.push(h('button', { onclick: () => { net.request('host:cohost', { to: m.id, value: !m.cohost }); close(); } }, m.cohost ? 'Remove co-host' : 'Make co-host (can control playback)'));
+      items.push(h('button.danger', { onclick: () => { if (confirm(`Remove ${m.name} from the room? They won't be able to come back in from this tab.`)) net.request('host:kick', { to: m.id }); close(); } }, `Remove ${m.name}`));
     } else {
       items.push(h('p', `${m.name}${m.host ? ' is the host' : ''}`));
     }
@@ -658,8 +679,8 @@
     const before = m.ts < S.joinedAt && !S.revealBefore;
     const sameItem = m.itemId && m.itemId === S.playback?.itemId;
     const time = m.itemId ? h('button.stamp', {
-      title: sameItem ? 'Jump everyone to this moment' : 'From an earlier video',
-      disabled: !sameItem,
+      title: !sameItem ? 'From an earlier video' : canControl() ? 'Jump everyone to this moment' : 'Said at this point in the film',
+      disabled: !sameItem || !canControl(),
       onclick: () => control('seek', { position: m.videoTime }),
     }, fmt(m.videoTime)) : null;
     const text = h('span.text' + (m.spoiler ? '.spoiler' : ''), { title: m.spoiler ? 'Spoiler, click to show' : null, onclick: e => e.currentTarget.classList.remove('spoiler') }, m.text);
@@ -675,7 +696,7 @@
     const cu = $('#catchup');
     cu.hidden = !before || S.revealBefore;
     cu.replaceChildren(
-      h('span', `${before} message${before === 1 ? '' : 's'} from before you got here are blurred so nothing gets spoiled.`),
+      h('span', before === 1 ? 'One message from before you got here is blurred so nothing gets spoiled.' : `${before} messages from before you got here are blurred so nothing gets spoiled.`),
       h('button.link-btn', { onclick: () => { S.revealBefore = true; renderChatAll(); } }, 'Show them'));
   }
 
@@ -992,7 +1013,7 @@
     net.on('highlights', list => { S.highlights = list; renderClips(); });
     net.on('captions', c => {
       S.sharedCaptions = c;
-      if (c && c.by !== S.me) { S.ccChosen = false; S.ccTrack = 'room'; S.cues = parseVtt(c.vtt); toast(`${nameOf(c.by)} turned on subtitles for everyone`); }
+      if (c && c.by !== S.me) { useRoomCaptions(); toast(`${nameOf(c.by)} turned on subtitles for everyone`); }
     });
     net.on('intermission', im => { const was = !!S.intermission; S.intermission = im; renderIntermission(); if (was && !im) toast('Intermission’s over'); });
     net.on('rewind', r => {

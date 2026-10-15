@@ -153,6 +153,26 @@
 
   // ---------- the movie sheet ----------
 
+  // Paid films: point people at the legal places to watch, so companion mode
+  // ("everyone presses play on their own Netflix") has somewhere to send them.
+  // Works without a TMDB key too, via a JustWatch search for the title.
+  let region = 'IN';
+  function whereToWatch(movie, prov) {
+    const r = (prov && prov.region) || region;
+    let place = r;
+    try { place = new Intl.DisplayNames(['en'], { type: 'region' }).of(r); } catch (e) { /* keep the code */ }
+    const search = `https://www.justwatch.com/${r.toLowerCase()}/search?q=${encodeURIComponent(movie.title)}`;
+    const logos = list => list.slice(0, 6).map(p => h('img', { src: p.logo, alt: p.name, title: p.name }));
+    const has = prov && (prov.stream.length || prov.rent.length || prov.buy.length);
+    return h('div.providers',
+      has && prov.stream.length ? [h('span.k', `Streaming in ${place} on`), logos(prov.stream)] : null,
+      has && !prov.stream.length && prov.rent.length ? [h('span.k', `Rent it in ${place} on`), logos(prov.rent)] : null,
+      has && !prov.stream.length && !prov.rent.length ? [h('span.k', 'Buy it on'), logos(prov.buy)] : null,
+      h('a.link-btn', { href: has && prov.link ? prov.link : search, target: '_blank', rel: 'noopener' },
+        has ? 'All the ways to watch it legally ↗' : `Where to watch it legally in ${place} ↗`),
+      h('span.fine.tmdb-credit', has ? 'via JustWatch / TMDB' : 'opens JustWatch'));
+  }
+
   async function openMovie(m) {
     const body = $('#movie-body');
     const dlg = openDialog('#dlg-movie');
@@ -216,11 +236,9 @@
         actions(comp)));
     }
 
-    const prov = movie.providers;
-    const provLine = prov && (prov.stream.length || prov.rent.length) ? h('div.providers',
-      h('span.k', prov.stream.length ? 'Streaming in India on' : 'Rent it on'),
-      (prov.stream.length ? prov.stream : prov.rent).slice(0, 6).map(p => h('img', { src: p.logo, alt: p.name, title: p.name })),
-      h('span.fine.tmdb-credit', 'via JustWatch / TMDB')) : null;
+    const free = sources && sources.options.some(o => o.kind === 'file');
+    if (sources && sources.region) region = sources.region;
+    const provLine = free ? null : whereToWatch(movie, movie.providers);
 
     const vote = like => h('button.btn.btn-small.btn-ghost', {
       onclick: (e) => { ctx && ctx.tasteVote(movie, like); e.target.textContent = like ? 'Noted 👍' : 'Noted'; },
@@ -265,5 +283,5 @@
     } catch (e) { el.remove(); }
   }
 
-  window.Discover = { init, render, refreshRecs, openMovie, landingStrip, mediaFrom };
+  window.Discover = { init, render, refreshRecs, openMovie, landingStrip, mediaFrom, whereToWatch };
 })();

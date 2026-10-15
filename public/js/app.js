@@ -37,10 +37,11 @@
     entering = false;
     if (!res.ok) {
       history.replaceState(null, '', '/');
-      const why = { 'not-found': 'That room doesn’t exist, or everyone left a while ago. Start a new one?', 'room-full': 'That room is full (50 people).', offline: 'Can’t reach the server right now.' }[res.error] || 'Couldn’t join (' + res.error + ')';
+      const why = { 'not-found': 'That room doesn’t exist, or everyone left a while ago. Start a new one?', 'room-full': 'That room is full (50 people).', removed: 'The host removed you from that room.', offline: 'Can’t reach the server right now.' }[res.error] || 'Couldn’t join (' + res.error + ')';
       showLanding(why);
       return;
     }
+    try { sessionStorage.setItem('br.room', code); } catch (e) { /* private mode */ }
     $('#landing').hidden = true;
     $('#room').hidden = false;
     Room.enter(net, res.snapshot);
@@ -99,12 +100,23 @@
 
   window.addEventListener('popstate', () => { if (!codeFromPath()) location.reload(); });
 
+  net.on('kicked', () => {
+    try { sessionStorage.removeItem('br.room'); } catch (e) { /* fine */ }
+    location.replace('/?removed');
+  });
+
   // boot
   const code = codeFromPath();
-  if (code) {
+  let lastRoom = null;
+  try { lastRoom = sessionStorage.getItem('br.room'); } catch (e) { /* fine */ }
+  if (code && code === lastRoom && Identity.savedName()) {
+    // a refresh: you already said who you are in this tab
+    goToRoom(code, Identity.savedName());
+  } else if (code) {
     // the click on "Take me in" also counts as the gesture browsers need before playing sound
     askName(code).then(name => goToRoom(code, name));
   } else {
-    showLanding();
+    showLanding(/[?&]removed/.test(location.search) ? 'The host removed you from that room.' : '');
+    if (location.search) history.replaceState(null, '', '/');
   }
 })();
