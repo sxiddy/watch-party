@@ -121,11 +121,94 @@ function poolSearch(q, limit = 20) {
   return Fuzzy.search(poolIndex, q, { limit });
 }
 
+// ---------- Wikipedia: every film, no key ----------
+// Without a TMDB key the bundled catalog only has ~60 films, so a search for
+// "conjuring" found nothing. Wikipedia has a page (and usually the poster) for
+// practically every released film and its API needs no key. Its search also
+// suggests spellings, which keeps the typo tolerance.
+
+const WIKI = 'https://en.wikipedia.org/w/api.php';
+const WIKI_GENRES = [
+  [/horror/i, 'Horror'], [/comed/i, 'Comedy'], [/thriller/i, 'Thriller'], [/science fiction|sci-fi/i, 'Sci-Fi'],
+  [/animat/i, 'Animation'], [/action/i, 'Action'], [/romant/i, 'Romance'], [/fantasy/i, 'Fantasy'],
+  [/crime|gangster|heist/i, 'Crime'], [/mystery/i, 'Mystery'], [/adventure/i, 'Adventure'], [/musical/i, 'Musical'],
+  [/biograph/i, 'Biography'], [/sports?\b/i, 'Sport'], [/historical|war film|period/i, 'History'], [/drama/i, 'Drama'],
+];
+
+async function wikiGet(params) {
+  const url = WIKI + '?' + new URLSearchParams({ action: 'query', format: 'json', formatversion: '2', ...params });
+  const hit = cache.get(url);
+  if (hit && Date.now() - hit.at < 60 * 60_000) return hit.data;
+  // Wikimedia asks API clients to say who they are and how to reach them
+  const res = await fetch(url, { headers: { 'user-agent': 'BackRow/1.0 (https://github.com/sxiddy/watch-party; student project)' }, signal: AbortSignal.timeout(6000) });
+  if (res.status === 429) throw new Error('Wikipedia is rate limiting us, using the bundled catalog');
+  if (!res.ok) throw new Error('Wikipedia ' + res.status);
+  const data = await res.json();
+  cache.set(url, { at: Date.now(), data });
+  if (cache.size > 800) cache.delete(cache.keys().next().value);
+  return data;
+}
+
+function fromWiki(p) {
+  const about = (p.description || '') + ' ' + (p.extract || '');
+  const year = +((p.description || '').match(/\b(18[89]\d|19\d\d|20\d\d)\b/) || about.match(/\b(18[89]\d|19\d\d|20\d\d)\b/) || [])[1] || null;
+  const head = (p.description || '') + ' ' + (p.extract || '').split('.')[0];
+  const genres = WIKI_GENRES.filter(([re]) => re.test(head)).map(([, g]) => g).slice(0, 3);
+  return {
+    id: 'wiki:' + p.pageid,
+    title: p.title.replace(/\s*\((?:\d{4} )?(?:[A-Za-z]+ )?film\)$/, ''),
+    year, genres, rating: null, votes: 0,
+    poster: p.thumbnail ? p.thumbnail.source.split('?')[0] : null,
+    description: (p.extract || '').slice(0, 400),
+    source: 'wiki',
+  };
+}
+
+async function wikiSearch(q) {
+  const run = async term => {
+    const d = await wikiGet({
+      generator: 'search', gsrsearch: term + ' film', gsrlimit: '15',
+      prop: 'pageimages|description|extracts', piprop: 'thumbnail', pithumbsize: '342', pilicense: 'any',
+      exintro: '1', explaintext: '1', exsentences: '2', exlimit: '15',
+    });
+    return (d.query?.pages || []).sort((a, b) => a.index - b.index)
+      // only pages about one film: not franchises, soundtracks, books or people
+      .filter(p => /\bfilm\b/i.test(p.description || '') && !/franchise|series|soundtrack|novel|character|actor|actress|director|list of/i.test(p.description || ''));
+  };
+  let pages = await run(q);
+  if (!pages.length) {
+    const s = await wikiGet({ list: 'search', srsearch: q + ' film', srinfo: 'suggestion', srlimit: '1' });
+    const better = s.query?.searchinfo?.suggestion;
+    if (better) pages = await run(better.replace(/\s*film$/i, ''));
+  }
+  return pages.map(fromWiki);
+}
+
 async function search(q) {
   q = String(q || '').slice(0, 80);
   if (!q.trim()) return [];
   const localHits = Fuzzy.search(Fuzzy.buildIndex(localMovies), q, { limit: 12 }).map(h => h.item);
-  if (!enabled()) return localHits;
+  if (!enabled()) {
+    let wiki = [];
+    try { wiki = await wikiSearch(q); } catch (e) { console.warn('[wiki]', e.message); }
+    // Strong matches from our own catalog go first (they may stream free and
+    // have more detail). Then Wikipedia in its own order, which is good at
+    // "what people usually mean", then our weak matches ("ted 2" is not
+    // Paddington 2, but it's not wrong to show it at the bottom).
+    const scored = Fuzzy.search(Fuzzy.buildIndex(localMovies), q, { limit: 12 });
+    // our catalog has no posters for studio films; borrow Wikipedia's for the same film
+    const wikiPoster = new Map(wiki.filter(w => w.poster).map(w => [Fuzzy.normalize(w.title) + w.year, w.poster]));
+    const withPoster = m => (m.poster ? m : { ...m, poster: wikiPoster.get(Fuzzy.normalize(m.title) + m.year) || null });
+    const strong = scored.filter(h => h.score >= 0.65).map(h => withPoster(h.item));
+    const weak = scored.filter(h => h.score < 0.65).map(h => h.item);
+    const seen = new Set();
+    return [...strong, ...wiki, ...weak].filter(m => {
+      const k = (m.title + m.year).toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).slice(0, 30);
+  }
 
   let results = [];
   try {

@@ -190,7 +190,7 @@
     const p = new URLSearchParams({ title: movie.title });
     if (movie.year) p.set('year', movie.year);
     if (movie.tmdbId) p.set('tmdbId', movie.tmdbId);
-    if (movie.source === 'local' || movie.id && !String(movie.id).startsWith('tmdb:')) p.set('catalogId', movie.id);
+    if (movie.source === 'local') p.set('catalogId', movie.id);
     let sources = { options: [] };
     try { sources = await api('/api/sources?' + p); } catch (e) { /* only the always-on options */ }
     if (dlg.open) body.replaceChildren(sheet(movie, sources));
