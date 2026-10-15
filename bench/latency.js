@@ -4,7 +4,7 @@
 //   node bench/latency.js                       # in-process server, 15 viewers, 300 actions
 //   node bench/latency.js --viewers 30 --ops 500
 //   node bench/latency.js --url http://192.168.1.20:3000   # a server elsewhere on your LAN
-//   node bench/latency.js --delay 40 --jitter 30           # add fake network delay per message
+//   node bench/latency.js --delay 40 --jitter 30           # fake network delay on every hop (up and down)
 //
 // Every bot lives in this one process, so "sent" and "received" are measured
 // on the same clock (performance.now) — no clock-sync error in the numbers.
@@ -51,7 +51,7 @@ async function run(cfg) {
   const { code } = await fetch(url + '/api/rooms', { method: 'POST' }).then(r => r.json());
 
   const host = await connect(url, cfg);
-  await join(host, code, 'bench-host-000', 'Host');
+  await join(host, code, 'bench-host-000-secret', 'Host');
   await req(host, 'media:set', { media: { kind: 'file', src: 'https://example.com/movie.mp4', title: 'Bench', duration: 7200 } });
   await req(host, 'settings', { controlMode: 'everyone' });
 
@@ -61,10 +61,10 @@ async function run(cfg) {
   const viewers = [];
   for (let i = 0; i < cfg.viewers; i++) {
     const s = await connect(url, cfg);
-    const id = 'bench-viewer-' + String(i).padStart(3, '0');
+    const id = 'bench-viewer-secret-' + String(i).padStart(3, '0');
     const snap = await join(s, code, id, 'Viewer ' + i);
     if (!snap.ok) throw new Error('join failed: ' + snap.error);
-    s.data = { id, last: 0, versions: [] };
+    s.data = { id, pub: snap.snapshot.you, last: 0, versions: [] };
     perViewer[i] = [];
     s.on('playback', pb => later(cfg, () => {
       s.data.last = Math.max(s.data.last, pb.version);
@@ -86,7 +86,8 @@ async function run(cfg) {
     const op = { action, issuedAt };
     if (action === 'seek') op.position = (pos = (pos + 37) % 7000);
     sent.set(issuedAt, performance.now());
-    host.emit('control', op, r => { if (!r || !r.ok) rejected++; });
+    // the fake network delay applies on the way up (host → server) too, not just down
+    later(cfg, () => host.emit('control', op, r => { if (!r || !r.ok) rejected++; }));
     await sleep(130 + Math.random() * 120); // ~5 clicks a second, faster than any real person
   }
   await sleep(500);
@@ -116,7 +117,7 @@ async function run(cfg) {
     s.connect();
     await new Promise(r => s.once('connect', r));
     const res = await join(s, code, s.data.id, 'again');
-    return res.ok && Math.abs(res.snapshot.playback.basePos - 4321) < 1 && res.snapshot.members.filter(m => m.id === s.data.id).length === 1;
+    return res.ok && Math.abs(res.snapshot.playback.basePos - 4321) < 1 && res.snapshot.you === s.data.pub && res.snapshot.members.filter(m => m.id === s.data.pub).length === 1;
   }));
 
   const result = {

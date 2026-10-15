@@ -116,7 +116,7 @@ test('reconnect keeps the same identity (no duplicate member)', () => {
 test('buffering pauses the room, and it resumes when they recover', () => {
   const t = setup(3);
   t.room.control(t.ids[0], { action: 'play' });
-  t.tick(5000);
+  t.tick(9000); // past the new-joiner grace period
   t.room.status(t.ids[1], { buffering: true });
   t.tick(600);
   assert.equal(t.room.playback.playing, true, 'short blips are ignored');
@@ -212,4 +212,54 @@ test('queue end: next item autoplays with a countdown', () => {
   assert.equal(t.room.playback.playing, true);
   // a second "ended" for the old item is ignored (several clients report it)
   assert.equal(t.room.queue.length, 0);
+});
+
+// ---- things the review found ----
+
+test('a guest cannot shorten the film or end it while the host is here', () => {
+  const t = setup(2);
+  t.room.control(t.ids[0], { action: 'play' });
+  t.tick(5000);
+  t.room.status(t.ids[1], { duration: 5, itemId: t.room.playback.itemId });
+  assert.equal(t.room.playback.duration, 600);
+  assert.equal(t.room.ended(t.ids[1], t.room.playback.itemId).error, 'not-allowed');
+});
+
+test('one guest cannot rewind a small room alone', () => {
+  const t = setup(2);
+  t.room.control(t.ids[0], { action: 'play' });
+  t.tick(60_000);
+  t.room.rewindRequest(t.ids[1]);
+  assert.notEqual(t.room.playback.reason, 'rewind');
+  t.room.rewindRequest(t.ids[0]);
+  assert.equal(t.room.playback.reason, 'rewind');
+});
+
+test('a click right after an automatic change is not a clash', () => {
+  const t = setup(3);
+  t.room.control(t.ids[0], { action: 'play' });
+  t.tick(9000);
+  t.room.status(t.ids[1], { buffering: true });
+  t.tick(1400); // room pauses for buffering (changedBy null)
+  assert.equal(t.room.playback.reason, 'buffering');
+  const v = t.room.playback.version - 1; // host hadn't seen the buffer pause yet
+  t.tick(50);
+  assert.ok(t.room.control(t.ids[0], { action: 'seek', position: 20, baseVersion: v }).ok);
+});
+
+test('guests can only queue video links from known free sources', () => {
+  const t = setup(2);
+  assert.equal(t.room.queueAdd(t.ids[1], { kind: 'file', src: 'http://169.254.169.254/x.mp4', title: 'x' }).error, 'not-allowed');
+  assert.ok(t.room.queueAdd(t.ids[1], { kind: 'file', src: 'https://archive.org/download/a/b.mp4', title: 'ok' }).ok);
+  assert.ok(t.room.queueAdd(t.ids[0], { kind: 'file', src: 'https://example.com/mine.mp4', title: 'host link' }).ok);
+});
+
+test('host can remove someone and they stay out', () => {
+  const t = setup(3);
+  assert.equal(t.room.kick(t.ids[1], t.ids[2]).error, 'not-host');
+  const r = t.room.kick(t.ids[0], t.ids[2]);
+  assert.ok(r.ok);
+  assert.deepEqual(r.sockets, ['s2']);
+  assert.equal(t.room.members.has(t.ids[2]), false);
+  assert.ok(t.room.banned.has(t.ids[2]));
 });

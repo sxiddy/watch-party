@@ -6,7 +6,7 @@ const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const { Room } = require('./room');
-const { roomCode, cleanText } = require('./util');
+const { roomCode, cleanText, shortId } = require('./util');
 const movies = require('./movies');
 const { findSources, captionsProxy } = require('./sources');
 
@@ -48,14 +48,21 @@ app.use((req, res, next) => {
   next();
 });
 
-const createHits = new Map();
-app.post('/api/rooms', (req, res) => {
-  const ip = req.ip;
-  const now = Date.now();
-  const hits = (createHits.get(ip) || []).filter(t => now - t < 60_000);
-  if (hits.length >= 20) return res.status(429).json({ error: 'Too many rooms, give it a minute' });
-  hits.push(now);
-  createHits.set(ip, hits);
+// per-IP limits for the routes that cost something (new rooms, outside lookups)
+const hitLog = new Map(); // "bucket|ip" -> timestamps in the last minute
+function perMinute(bucket, max, message) {
+  return (req, res, next) => {
+    const key = bucket + '|' + req.ip;
+    const now = Date.now();
+    const hits = (hitLog.get(key) || []).filter(t => now - t < 60_000);
+    if (hits.length >= max) return res.status(429).json({ error: message });
+    hits.push(now);
+    hitLog.set(key, hits);
+    next();
+  };
+}
+
+app.post('/api/rooms', perMinute('rooms', 20, 'Too many rooms, give it a minute'), (req, res) => {
   if (rooms.size > 2000) return res.status(503).json({ error: 'Server is full' });
   res.json({ code: createRoom().code });
 });
@@ -93,14 +100,14 @@ app.get('/api/movies/discover', wrap(async (req, res) => {
 app.get('/api/movies/:id(\\d+)', wrap(async (req, res) => res.json(await movies.details(+req.params.id))));
 app.get('/api/movies/:id(\\d+)/recommendations', wrap(async (req, res) => res.json({ results: await movies.recommendations(+req.params.id) })));
 
-app.get('/api/sources', wrap(async (req, res) => {
+app.get('/api/sources', perMinute('sources', 30, 'Slow down a little'), wrap(async (req, res) => {
   const q = req.query;
   const title = cleanText(String(q.title || ''), 200);
   if (!title) return res.status(400).json({ error: 'title needed' });
   res.json(await findSources({ title, year: +q.year || null, tmdbId: +q.tmdbId || null, catalogId: q.catalogId ? cleanText(String(q.catalogId), 80) : null }));
 }));
 
-app.get('/api/captions', wrap(async (req, res) => {
+app.get('/api/captions', perMinute('captions', 30, 'Slow down a little'), wrap(async (req, res) => {
   const vtt = await captionsProxy(String(req.query.u || ''));
   res.type('text/vtt').set('Cache-Control', 'public, max-age=86400').send(vtt);
 }));
@@ -134,9 +141,19 @@ io.on('connection', socket => {
     const code = String(p.code || '').toUpperCase().slice(0, 8);
     const room = rooms.get(code);
     if (!room) return ack({ ok: false, error: 'not-found' });
-    const id = cleanText(String(p.clientId || ''), 40);
-    if (id.length < 8) return ack({ ok: false, error: 'bad-id' });
-    if (!room.members.has(id) && room.connectedMembers().length >= 50) return ack({ ok: false, error: 'room-full' });
+    // The id a browser sends is a secret that stays in that tab. Everyone else
+    // only ever sees a public id the server hands out, so knowing someone's
+    // public id (it's in every member list) doesn't let you rejoin as them.
+    const secret = String(p.clientId || '');
+    if (!/^[A-Za-z0-9_-]{16,64}$/.test(secret)) return ack({ ok: false, error: 'bad-id' });
+    if (!room.secrets) room.secrets = new Map();
+    let id = room.secrets.get(secret);
+    if (!id) {
+      if (room.connectedMembers().length >= 50) return ack({ ok: false, error: 'room-full' });
+      id = shortId();
+      room.secrets.set(secret, id);
+    }
+    if (room.banned && room.banned.has(id)) return ack({ ok: false, error: 'removed' });
 
     // leaving a previous room on the same socket
     if (socket.data.code && socket.data.code !== code) leave(socket);
@@ -148,11 +165,25 @@ io.on('connection', socket => {
     room.tick(); // push the member list right away
   });
 
+  // A token bucket per socket, on top of the per-feature limits in room.js.
+  // 20 events/s sustained with a burst of 40 is far above what a person does
+  // (status reports come every 2 s) but stops scripted spam of anything.
+  let tokens = 40, refilled = Date.now();
+  const allowed = () => {
+    const now = Date.now();
+    tokens = Math.min(40, tokens + (now - refilled) / 50);
+    refilled = now;
+    if (tokens < 1) return false;
+    tokens -= 1;
+    return true;
+  };
+
   // every room action goes through here: (room, memberId, payload) → result
   const on = (event, fn) => socket.on(event, (payload, ack) => {
     const room = rooms.get(socket.data.code);
     const reply = typeof ack === 'function' ? ack : () => {};
     if (!room || !room.members.has(socket.data.id)) return reply({ ok: false, error: 'not-in-room' });
+    if (!allowed()) return reply({ ok: false, error: 'slow-down' });
     try {
       reply(fn(room, socket.data.id, payload || {}) || { ok: true });
     } catch (e) {
@@ -171,7 +202,8 @@ io.on('connection', socket => {
   on('queue:sort', (r, id) => r.queueSortByVotes(id));
   on('queue:play', (r, id, p) => r.queuePlay(id, p.id));
   on('chat', (r, id, p) => r.chatSend(id, p.text, { spoiler: p.spoiler }));
-  on('typing', (r, id) => { socket.to(r.code).emit('typing', { id, name: r.members.get(id).name }); });
+  let lastTyping = 0;
+  on('typing', (r, id) => { if (Date.now() - lastTyping < 1500) return; lastTyping = Date.now(); socket.to(r.code).emit('typing', { id, name: r.members.get(id).name }); });
   on('react', (r, id, p) => r.react(id, p.emoji));
   on('poll:create', (r, id, p) => r.pollCreate(id, p));
   on('poll:vote', (r, id, p) => r.pollVote(id, p.pollId, p.optionId));
@@ -189,11 +221,18 @@ io.on('connection', socket => {
   on('clip:remove', (r, id, p) => r.highlightRemove(id, p.id));
   on('captions:share', (r, id, p) => r.captionsShare(id, p));
   on('taste', (r, id, p) => r.tasteVote(id, p.item, p.like));
-  on('rename', (r, id, p) => {
-    const m = r.members.get(id);
-    const name = cleanText(String(p.name || ''), 24);
-    if (name) { m.name = name; r._membersDirty = true; }
-    return { ok: !!name };
+  on('rename', (r, id, p) => r.rename(id, p.name));
+  on('host:kick', (r, id, p) => {
+    const res = r.kick(id, p.to);
+    if (!res.ok) return res;
+    for (const sid of res.sockets) {
+      const s = io.sockets.sockets.get(sid);
+      if (!s) continue;
+      s.emit('kicked');
+      s.leave(r.code);
+      s.data.code = null;
+    }
+    return { ok: true };
   });
 
   socket.on('disconnect', () => leave(socket));
@@ -219,6 +258,7 @@ setInterval(() => {
     if (!online && now - room.lastActiveAt > ROOM_IDLE_MS) { rooms.delete(code); continue; }
     if (online) io.to(code).emit('stats', { latency: room.latencyStats(), serverTs: now });
   }
+  for (const [key, hits] of hitLog) if (now - hits[hits.length - 1] > 60_000) hitLog.delete(key);
 }, 2000).unref();
 
 if (require.main === module) {

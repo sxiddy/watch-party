@@ -14,11 +14,20 @@ const BUFFER_GIVE_UP_MS = 10_000; // someone stuck longer than this: carry on wi
 const REWIND_WINDOW_MS = 20_000;
 const REWIND_COOLDOWN_MS = 20_000;
 const REWIND_SECONDS = 10;
+const JOIN_GRACE_MS = 8000;       // a late joiner's first seconds of loading don't pause everyone
 const MAX_CHAT = 300;
 const REACTION_BUCKET = 5;        // seconds per heatmap bucket
 
 const EMOJIS = ['😂', '😮', '😍', '😭', '🔥', '👏', '💀', '🍿'];
 const COLORS = ['#e4572e', '#29a19c', '#f3a712', '#6a8eae', '#c45ab3', '#5b8c5a', '#d1495b', '#3d5a80', '#ee964b', '#8e7dbe', '#00798c', '#b5651d'];
+
+// Everyone in the room loads whatever image or video a queued item points at,
+// so only a few known hosts are allowed for posters, and links to video files
+// from anywhere else can only be added by someone with control.
+const POSTER_HOSTS = ['image.tmdb.org', 'archive.org'];
+const hostOf = u => { try { return new URL(u).hostname; } catch { return ''; } };
+const onHost = (u, hosts) => { const h = hostOf(u); return hosts.some(x => h === x || h.endsWith('.' + x)); };
+const trustedVideo = u => onHost(u, ['archive.org']);
 
 function cleanMedia(m) {
   if (!m || typeof m !== 'object') return null;
@@ -27,7 +36,7 @@ function cleanMedia(m) {
     kind,
     title: cleanText(m.title, 200) || 'Untitled',
     year: num(m.year, 1870, 2100),
-    poster: isHttpUrl(m.poster) ? m.poster : null,
+    poster: isHttpUrl(m.poster) && onHost(m.poster, POSTER_HOSTS) ? m.poster : null,
     tmdbId: num(m.tmdbId, 1, 1e9),
     catalogId: cleanText(m.catalogId, 80) || null,
     sourceLabel: cleanText(m.sourceLabel, 60) || null,
@@ -36,7 +45,7 @@ function cleanMedia(m) {
     captions: [],
   };
   if (Array.isArray(m.captions)) {
-    out.captions = m.captions.slice(0, 6).filter(c => c && (isHttpUrl(c.src) || /^\/api\/captions\?/.test(c.src || '')))
+    out.captions = m.captions.slice(0, 6).filter(c => c && /^\/api\/captions\?/.test(c.src || '')) // our proxy only, which is locked to archive.org
       .map(c => ({ src: c.src, lang: cleanText(c.lang, 10) || 'en', label: cleanText(c.label, 40) || 'Subtitles' }));
   }
   if (kind === 'file') {
@@ -111,6 +120,7 @@ class Room {
     const wasOffline = !m.connected;
     m.connected = true;
     m.leftAt = null;
+    m.lastJoinAt = t; // fresh joiners are still loading; see _checkBuffering
     this.lastActiveAt = t;
 
     if (!this.hostId || !this.members.has(this.hostId)) this._setHost(id, null);
@@ -146,7 +156,7 @@ class Room {
 
   _rateOk(m, key, max, windowMs) {
     const t = this.now();
-    const arr = m[key];
+    const arr = m[key] || (m[key] = []);
     while (arr.length && t - arr[0] > windowMs) arr.shift();
     if (arr.length >= max) return false;
     arr.push(t);
@@ -183,7 +193,7 @@ class Room {
     const t = this.now();
     // Concurrent actions: if someone else changed playback a moment ago and
     // this request was made without seeing that change, the earlier one wins.
-    if (op.baseVersion != null && op.baseVersion < pb.version && pb.changedBy !== id && t - pb.changedAt < CONFLICT_WINDOW_MS) {
+    if (op.baseVersion != null && op.baseVersion < pb.version && pb.changedBy && pb.changedBy !== id && t - pb.changedAt < CONFLICT_WINDOW_MS) {
       const winner = this.members.get(pb.changedBy);
       return { ok: false, error: 'conflict', winner: winner ? winner.name : 'someone', state: this.playbackView() };
     }
@@ -240,7 +250,9 @@ class Room {
   reportDuration(id, itemId, duration) {
     const d = num(duration, 1, 86400);
     if (!d || itemId !== this.playback.itemId) return;
-    if (!this.playback.duration || Math.abs(this.playback.duration - d) > 2) {
+    // Anyone may fill in a missing duration, but only people with control can
+    // change one, otherwise a guest could shorten the film and stop it for all.
+    if (!this.playback.duration || (this.canControl(id) && Math.abs(this.playback.duration - d) > 2)) {
       this.playback.duration = d; // not a version bump; just metadata
     }
   }
@@ -248,6 +260,9 @@ class Room {
   ended(id, itemId) {
     const pb = this.playback;
     if (!this.members.has(id) || itemId !== pb.itemId || !pb.playing) return { ok: false };
+    // whoever has control reports the end; if nobody with control is online, anyone can
+    const controllerOnline = this.connectedMembers().some(x => this.canControl(x.id));
+    if (!this.canControl(id) && controllerOnline) return { ok: false, error: 'not-allowed' };
     if (pb.duration && this.position() < pb.duration - 3) return { ok: false, error: 'not-at-end' };
     if (this.queue.length) {
       const next = this.queue.shift();
@@ -270,6 +285,8 @@ class Room {
     if (!m) return { ok: false };
     const media = cleanMedia(rawMedia);
     if (!media) return { ok: false, error: 'bad-media' };
+    if (media.kind === 'file' && !trustedVideo(media.src) && !this.canControl(id)) return { ok: false, error: 'not-allowed' };
+    if (!this._rateOk(m, '_ops', 8, 1000)) return { ok: false, error: 'slow-down' };
     if (this.queue.length >= 50) return { ok: false, error: 'queue-full' };
     const item = { id: shortId(), media, addedBy: id, addedByName: m.name, addedAt: this.now(), votes: new Set([id]) };
     this.queue.push(item);
@@ -378,6 +395,7 @@ class Room {
   pollCreate(id, { question, options, durationSec, fromQueue } = {}) {
     const m = this.members.get(id);
     if (!m) return { ok: false };
+    if (!this._rateOk(m, '_polls', 2, 30_000)) return { ok: false, error: 'slow-down' };
     if (this.polls.filter(p => !p.closed).length >= 3) return { ok: false, error: 'too-many-polls' };
     let opts;
     let kind = 'custom';
@@ -462,6 +480,36 @@ class Room {
     return { ok: true };
   }
 
+  // Host only. Takes them out of the room and keeps them out (by their id; the
+  // server also remembers their address so a fresh tab doesn't walk back in).
+  kick(id, to) {
+    if (id !== this.hostId) return { ok: false, error: 'not-host' };
+    const target = this.members.get(to);
+    if (!target || to === id) return { ok: false };
+    const sockets = [...target.sockets];
+    this.members.delete(to);
+    (this.banned || (this.banned = new Set())).add(to);
+    this.queue.forEach(q => q.votes.delete(to));
+    this.rewindReqs.delete(to);
+    if (this.intermission) this.intermission.ready = this.intermission.ready.filter(x => x !== to);
+    this._membersDirty = true;
+    this._system(`${target.name} was shown the door`);
+    this._checkBufferResume();
+    this._checkIntermissionReady();
+    return { ok: true, sockets };
+  }
+
+  rename(id, name) {
+    const m = this.members.get(id);
+    const clean = cleanText(String(name || ''), 24);
+    if (!m || !clean || clean === m.name) return { ok: false };
+    if (!this._rateOk(m, '_renames', 2, 30_000)) return { ok: false, error: 'slow-down' };
+    this._system(`${m.name} is now ${clean}`);
+    m.name = clean;
+    this._membersDirty = true;
+    return { ok: true };
+  }
+
   updateSettings(id, patch = {}) {
     if (id !== this.hostId) return { ok: false, error: 'not-host' };
     if (patch.controlMode === 'host' || patch.controlMode === 'everyone') this.settings.controlMode = patch.controlMode;
@@ -497,7 +545,8 @@ class Room {
     }
     if (s.duration && s.itemId) this.reportDuration(id, s.itemId, s.duration);
     if (Array.isArray(s.latency)) {
-      for (const v of s.latency.slice(0, 50)) { const n = num(v, 0, 10000); if (n != null) this.latency.push(n); }
+      // a browser reports what it measured since its last report (a handful at most)
+      for (const v of s.latency.slice(0, 10)) { const n = num(v, 0, 5000); if (n != null) this.latency.push(n); }
       if (this.latency.length > 2000) this.latency.splice(0, this.latency.length - 2000);
     }
     this._membersDirty = true;
@@ -509,7 +558,8 @@ class Room {
     const t = this.now();
     const stuck = this.connectedMembers().filter(m => m.status.buffering && m.status.mediaReady
       && t - m.status.bufferingSince >= BUFFER_TRIGGER_MS && t - m.status.bufferingSince < BUFFER_GIVE_UP_MS
-      && t - m._bufferTriggeredAt > 15_000);
+      && t - m._bufferTriggeredAt > 15_000
+      && t - (m.lastJoinAt || 0) > JOIN_GRACE_MS);
     if (!stuck.length) return;
     stuck.forEach(m => { m._bufferTriggeredAt = t; });
     this._publishPlayback({ playing: false, basePos: this.position(), baseTime: t }, null, 'buffering');
@@ -550,7 +600,9 @@ class Room {
   }
 
   rewindThreshold() {
-    return Math.max(1, Math.ceil(this.connectedMembers().length * 0.3));
+    // at least two people, so one guest can't drag a small room back on their own
+    const n = this.connectedMembers().length;
+    return Math.min(n, Math.max(2, Math.ceil(n * 0.3))) || 1;
   }
 
   // ---------- intermission ----------
@@ -605,6 +657,7 @@ class Room {
   highlightAdd(id, { start, end, title } = {}) {
     const m = this.members.get(id);
     if (!m || !this.playback.media) return { ok: false };
+    if (!this._rateOk(m, '_clips', 3, 10_000)) return { ok: false, error: 'slow-down' };
     const now = this.position();
     let e = num(end, 0, 86400, now);
     let s = num(start, 0, 86400, Math.max(0, e - 15));
@@ -666,7 +719,10 @@ class Room {
   }
 
   tasteVote(id, item, like) {
-    if (!this.members.has(id) || !item) return { ok: false };
+    const m = this.members.get(id);
+    if (!m || !item) return { ok: false };
+    if (!this._rateOk(m, '_taste', 10, 5000)) return { ok: false, error: 'slow-down' };
+    if (this.taste.size >= 200) return { ok: false, error: 'full' };
     const media = { kind: 'companion', title: cleanText(item.title, 200), tmdbId: num(item.tmdbId, 1, 1e9), catalogId: cleanText(item.catalogId, 80) || null,
       genres: Array.isArray(item.genres) ? item.genres.slice(0, 6).map(g => cleanText(g, 30)) : [], poster: isHttpUrl(item.poster) ? item.poster : null, year: num(item.year, 1870, 2100) };
     if (!media.title) return { ok: false };
