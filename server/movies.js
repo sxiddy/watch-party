@@ -260,8 +260,11 @@ async function personFilms(q) {
     const d = await tmdb('/search/person', { query: q, include_adult: false });
     const p = (d.results || []).find(x => ['Directing', 'Acting', 'Writing'].includes(x.known_for_department) && (x.popularity || 0) >= 2);
     if (!p) return [];
-    // the name has to really be what they typed: "nolan" → Christopher Nolan, "inception" → nobody
-    const hit = Fuzzy.search(Fuzzy.buildIndex([{ title: p.name }]), q, { threshold: 0.75 });
+    // The name has to really be what they typed: "nolan" → Christopher Nolan,
+    // "inception" → nobody. One word must be the surname, so "ted" isn't Ted Levine.
+    const oneWord = Fuzzy.normalize(q).split(' ').filter(Boolean).length === 1;
+    const name = oneWord ? p.name.trim().split(/\s+/).pop() : p.name;
+    const hit = Fuzzy.search(Fuzzy.buildIndex([{ title: name }]), q, { threshold: 0.75 });
     if (!hit.length) return [];
     const role = p.known_for_department === 'Acting' ? 'with_cast' : 'with_crew';
     const f = await tmdb('/discover/movie', { [role]: p.id, sort_by: 'vote_count.desc', include_adult: false });
