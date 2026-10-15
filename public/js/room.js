@@ -89,6 +89,14 @@
     renderNowShowing();
     if (!silent && prev && pb.changedBy !== S.me) announce(pb, prev);
     if (pb.playing && pb.reason !== 'buffering') hideNotice(); // whatever we were waiting on is over
+    // the 3-2-1 button only makes sense while stopped
+    $('#btn-countdown').hidden = !!pb.playing;
+    // The overlay is normally hidden by the per-frame loop, which browsers pause
+    // in background tabs. Make sure it can't be left showing "1" there.
+    clearTimeout(S._cdHideT);
+    const cd = sync.countdown();
+    if (cd > 0) S._cdHideT = setTimeout(() => { if (sync.countdown() <= 0) $('#countdown').hidden = true; }, cd + 50);
+    else $('#countdown').hidden = true;
     if (pb.reason === 'buffering') showNotice('Someone’s buffering, hang on a sec…');
   }
 
