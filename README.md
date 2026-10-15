@@ -100,6 +100,8 @@ The site is split in two:
 
 The Render address serves the whole site on its own too, and so does `npm start` on your laptop.
 
+A note on the live demo's numbers: the free Render server is in the US, so from India every message crosses the internet. In a two-tab test on the live site the round trip was about 276 ms and the room's click-to-arrival p95 was 284 ms, while the two players stayed about 20–30 ms apart. The brief's 250 ms target is for a local network. For that, run `npm start` on one laptop and have everyone join over the same Wi-Fi (see [docs/LATENCY.md](docs/LATENCY.md)).
+
 ## What changed after review
 
 Before submitting, I had the project reviewed strictly against the brief. The main fixes that came out of it:
