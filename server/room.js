@@ -14,7 +14,8 @@ const BUFFER_GIVE_UP_MS = 10_000; // someone stuck longer than this: carry on wi
 const REWIND_WINDOW_MS = 20_000;
 const REWIND_COOLDOWN_MS = 20_000;
 const REWIND_SECONDS = 10;
-const JOIN_GRACE_MS = 8000;       // a late joiner's first seconds of loading don't pause everyone
+const JOIN_GRACE_MS = 8000;
+const BUFFER_STRIKE_MS = 5 * 60_000;       // a late joiner's first seconds of loading don't pause everyone
 const MAX_CHAT = 300;
 const REACTION_BUCKET = 5;        // seconds per heatmap bucket
 
@@ -76,7 +77,7 @@ class Room {
 
     this.members = new Map();
     this.hostId = null;
-    this.settings = { controlMode: 'host', waitForBuffering: true, autoRewind: true, captionsForAll: false };
+    this.settings = { controlMode: 'host', waitForBuffering: true, autoRewind: true, captionsForAll: false, locked: false };
     this.playback = {
       itemId: null, media: null, playing: false, issuedAt: null, basePos: 0, baseTime: this.now(), rate: 1,
       duration: 0, version: 0, changedAt: 0, changedBy: null, reason: null, stopAt: null,
@@ -100,7 +101,7 @@ class Room {
 
   // ---------- members ----------
 
-  join(id, name, socketId) {
+  join(id, name, socketId, opts = {}) {
     const t = this.now();
     let m = this.members.get(id);
     const isNew = !m;
@@ -115,7 +116,11 @@ class Room {
       };
       this.members.set(id, m);
     }
-    m.name = cleanText(name, 24) || m.name || 'Guest';
+    if (opts.ip) m.ip = opts.ip;
+    const wanted = cleanText(name, 24);
+    // a returning tab with a new name goes through rename(), so everyone sees it
+    if (isNew) m.name = wanted || 'Guest';
+    else if (wanted && wanted !== m.name) this.rename(id, wanted);
     m.sockets.add(socketId);
     const wasOffline = !m.connected;
     m.connected = true;
@@ -250,9 +255,11 @@ class Room {
   reportDuration(id, itemId, duration) {
     const d = num(duration, 1, 86400);
     if (!d || itemId !== this.playback.itemId) return;
-    // Anyone may fill in a missing duration, but only people with control can
-    // change one, otherwise a guest could shorten the film and stop it for all.
-    if (!this.playback.duration || (this.canControl(id) && Math.abs(this.playback.duration - d) > 2)) {
+    // Only people with control may set the length, otherwise a guest could
+    // shorten the film and stop it for everyone. Companion mode has no player
+    // to measure, so its clock is never capped by a reported length.
+    if (!this.canControl(id) || this.playback.media?.kind === 'companion') return;
+    if (!this.playback.duration || Math.abs(this.playback.duration - d) > 2) {
       this.playback.duration = d; // not a version bump; just metadata
     }
   }
@@ -489,6 +496,8 @@ class Room {
     const sockets = [...target.sockets];
     this.members.delete(to);
     (this.banned || (this.banned = new Set())).add(to);
+    // and their address, so a fresh tab can't walk straight back in
+    if (target.ip) (this.bannedIps || (this.bannedIps = new Set())).add(target.ip);
     this.queue.forEach(q => q.votes.delete(to));
     this.rewindReqs.delete(to);
     if (this.intermission) this.intermission.ready = this.intermission.ready.filter(x => x !== to);
@@ -513,7 +522,7 @@ class Room {
   updateSettings(id, patch = {}) {
     if (id !== this.hostId) return { ok: false, error: 'not-host' };
     if (patch.controlMode === 'host' || patch.controlMode === 'everyone') this.settings.controlMode = patch.controlMode;
-    for (const k of ['waitForBuffering', 'autoRewind', 'captionsForAll']) if (typeof patch[k] === 'boolean') this.settings[k] = patch[k];
+    for (const k of ['waitForBuffering', 'autoRewind', 'captionsForAll', 'locked']) if (typeof patch[k] === 'boolean') this.settings[k] = patch[k];
     this.emit('settings', this.settings);
     return { ok: true };
   }
@@ -534,6 +543,9 @@ class Room {
     const st = m.status;
     if (typeof s.away === 'boolean') st.away = s.away;
     if (typeof s.mediaReady === 'boolean') st.mediaReady = s.mediaReady;
+    // loading: the player isn't showing the room's frame yet, so there's no drift to report
+    if (typeof s.loading === 'boolean') st.loading = s.loading;
+    if (s.drift === null) st.drift = null;
     const drift = num(s.drift, -3600, 3600);
     if (drift != null) st.drift = Math.round(drift * 1000) / 1000;
     const rtt = num(s.rtt, 0, 60000);
@@ -544,10 +556,13 @@ class Room {
       if (!s.buffering) this._checkBufferResume();
     }
     if (s.duration && s.itemId) this.reportDuration(id, s.itemId, s.duration);
-    if (Array.isArray(s.latency)) {
-      // a browser reports what it measured since its last report (a handful at most)
-      for (const v of s.latency.slice(0, 10)) { const n = num(v, 0, 5000); if (n != null) this.latency.push(n); }
-      if (this.latency.length > 2000) this.latency.splice(0, this.latency.length - 2000);
+    if (Array.isArray(s.latency) && s.latency.length && this._rateOk(m, '_latReports', 1, 1500)) {
+      // A browser reports what it measured since its last report: a few values,
+      // once every 2 s. Each person keeps only their last 20, so one tab can't
+      // flood the room's numbers (it can still report its own badly, see LATENCY.md).
+      const mine = m._latency || (m._latency = []);
+      for (const v of s.latency.slice(0, 5)) { const n = num(v, 0, 2000); if (n != null) mine.push(n); }
+      if (mine.length > 20) mine.splice(0, mine.length - 20);
     }
     this._membersDirty = true;
   }
@@ -559,9 +574,12 @@ class Room {
     const stuck = this.connectedMembers().filter(m => m.status.buffering && m.status.mediaReady
       && t - m.status.bufferingSince >= BUFFER_TRIGGER_MS && t - m.status.bufferingSince < BUFFER_GIVE_UP_MS
       && t - m._bufferTriggeredAt > 15_000
-      && t - (m.lastJoinAt || 0) > JOIN_GRACE_MS);
+      && t - (m.lastJoinAt || 0) > JOIN_GRACE_MS
+      && (m._bufPauses || []).filter(x => t - x < BUFFER_STRIKE_MS).length < 2);
     if (!stuck.length) return;
-    stuck.forEach(m => { m._bufferTriggeredAt = t; });
+    // someone who has paused the room twice in 5 minutes gets left to catch up
+    // on their own after that, so a flaky (or fake) connection can't loop it
+    stuck.forEach(m => { m._bufferTriggeredAt = t; (m._bufPauses || (m._bufPauses = [])).push(t); });
     this._publishPlayback({ playing: false, basePos: this.position(), baseTime: t }, null, 'buffering');
     this.bufferPause = { ids: stuck.map(m => m.id), since: t, version: this.playback.version };
     this.emit('notice', { kind: 'buffering', text: `Hang on, waiting for ${stuck.map(m => m.name).join(', ')}` });
@@ -584,6 +602,8 @@ class Room {
     if (!m || !this.playback.media || !this.playback.playing) return { ok: false, error: 'not-playing' };
     const t = this.now();
     for (const [k, ts] of this.rewindReqs) if (t - ts > REWIND_WINDOW_MS) this.rewindReqs.delete(k);
+    // one vote per address too, so two tabs on one laptop don't count as two people
+    for (const [k] of this.rewindReqs) if (k !== id && m.ip && this.members.get(k)?.ip === m.ip) return { ok: true, count: this.rewindReqs.size, need: this.rewindThreshold() };
     this.rewindReqs.set(id, t);
     const need = this.rewindThreshold();
     const count = this.rewindReqs.size;
@@ -699,6 +719,7 @@ class Room {
 
   captionsShare(id, { name, vtt } = {}) {
     if (!this.canControl(id)) return { ok: false, error: 'not-allowed' };
+    if (typeof vtt === 'string') vtt = vtt.replace(/^\uFEFF/, '');
     if (typeof vtt !== 'string' || vtt.length > 800_000 || !/^WEBVTT/.test(vtt)) return { ok: false, error: 'bad-captions' };
     this.sharedCaptions = { name: cleanText(name, 80) || 'subtitles', vtt, by: id, itemId: this.playback.itemId };
     this.emit('captions', this.sharedCaptions);
@@ -782,7 +803,7 @@ class Room {
   }
 
   latencyStats() {
-    const v = this.latency.slice(-500);
+    const v = this.connectedMembers().flatMap(m => m._latency || []);
     return { n: v.length, p50: percentile(v, 50), p95: percentile(v, 95), p99: percentile(v, 99), max: v.length ? Math.max(...v) : 0 };
   }
 

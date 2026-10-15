@@ -36,3 +36,27 @@ test('rejoining with a public id does not take over that person', async () => {
     await new Promise(r => server.close(r));
   }
 });
+
+test('one socket cannot pile up ghost members by switching identity', async () => {
+  await new Promise(r => server.listen(0, r));
+  const url = 'http://127.0.0.1:' + server.address().port;
+  const room = createRoom();
+  const s = ioc(url, { transports: ['websocket'], forceNew: true });
+  try {
+    await new Promise(r => s.once('connect', r));
+    const join = secret => new Promise(r => s.emit('join', { code: room.code, clientId: secret, name: 'x' }, r));
+    assert.ok((await join('first-secret-0123456789')).ok);
+    assert.equal((await join('second-secret-012345678')).error, 'already-joined');
+    assert.ok((await join('first-secret-0123456789')).ok, 'rejoining as yourself is fine');
+    let last;
+    for (let i = 0; i < 6; i++) last = await join('first-secret-0123456789');
+    assert.equal(last.error, 'slow-down', 'join itself is rate limited');
+    assert.equal(room.connectedMembers().length, 1);
+    s.close();
+    await new Promise(r => setTimeout(r, 200));
+    assert.equal(room.connectedMembers().length, 0, 'nobody left behind');
+  } finally {
+    s.close();
+    await new Promise(r => server.close(r));
+  }
+});

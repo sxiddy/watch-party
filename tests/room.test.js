@@ -263,3 +263,79 @@ test('host can remove someone and they stay out', () => {
   assert.equal(t.room.members.has(t.ids[2]), false);
   assert.ok(t.room.banned.has(t.ids[2]));
 });
+
+// ---------- round-2 review ----------
+
+test('nobody can cap a companion room with a fake length', () => {
+  const t = setup(2);
+  const r = t.room.setMedia(t.ids[0], { kind: 'companion', title: 'Ted 2', duration: 0 });
+  t.room.status(t.ids[1], { duration: 5, itemId: r.itemId });
+  t.room.status(t.ids[0], { duration: 5, itemId: r.itemId });
+  assert.equal(t.room.playback.duration, 0);
+  t.room.control(t.ids[0], { action: 'play' });
+  t.tick(60_000);
+  assert.ok(t.room.position() > 50, 'the shared clock keeps running');
+});
+
+test('a guest cannot fill in a missing length either', () => {
+  const t = setup(2);
+  const r = t.room.setMedia(t.ids[0], { kind: 'file', src: 'https://archive.org/download/a/b.mp4', title: 'B' });
+  t.room.status(t.ids[1], { duration: 5, itemId: r.itemId });
+  assert.equal(t.room.playback.duration, 0);
+  t.room.status(t.ids[0], { duration: 5400, itemId: r.itemId });
+  assert.equal(t.room.playback.duration, 5400);
+});
+
+test('one tab cannot flood the room latency numbers', () => {
+  const t = setup(3);
+  t.room.status(t.ids[0], { latency: [20, 25, 30] });
+  t.room.status(t.ids[1], { latency: [22, 28] });
+  for (let i = 0; i < 300; i++) { t.room.status(t.ids[2], { latency: Array(10).fill(4999) }); t.tick(100); }
+  const st = t.room.latencyStats();
+  assert.ok(st.max <= 2000, 'values are capped');
+  assert.equal(t.room.members.get(t.ids[2])._latency.length, 20, 'each person keeps only their last 20');
+  assert.equal(st.n, 25);
+});
+
+test('fake buffering can pause the room twice, not forever', () => {
+  const t = setup(3);
+  t.room.control(t.ids[0], { action: 'play' });
+  t.tick(9000);
+  let pauses = 0;
+  for (let i = 0; i < 5; i++) {
+    t.room.status(t.ids[1], { buffering: true });
+    t.tick(1400);
+    if (t.room.playback.reason === 'buffering') pauses++;
+    t.room.status(t.ids[1], { buffering: false });
+    t.tick(16_000);
+  }
+  assert.equal(pauses, 2);
+  assert.equal(t.room.playback.playing, true);
+});
+
+test('subtitles with a byte-order mark can be shared', () => {
+  const t = setup(2);
+  assert.ok(t.room.captionsShare(t.ids[0], { name: 'a.vtt', vtt: '﻿WEBVTT\n\n00:01.000 --> 00:02.000\nhi' }).ok);
+  assert.ok(t.room.sharedCaptions.vtt.startsWith('WEBVTT'));
+});
+
+test('coming back with a new name is announced', () => {
+  const t = setup(2);
+  t.room.join(t.ids[1], 'Host', 's9');
+  assert.equal(t.room.members.get(t.ids[1]).name, 'Host');
+  assert.ok(t.events.some(e => e.ev === 'chat' && /P1 is now Host/.test(e.data.text)));
+});
+
+test('kicking also remembers the address; two tabs on one address are one rewind vote', () => {
+  const t = setup(0);
+  t.room.join('aaaaaaaaaaaaaaaa', 'Host', 's0', { ip: 'ip-a' });
+  for (let i = 1; i <= 5; i++) t.room.join('member' + i + 'xxxxxxxxx', 'P' + i, 's' + i, { ip: i <= 2 ? 'ip-b' : 'ip-' + i });
+  t.room.setMedia('aaaaaaaaaaaaaaaa', { kind: 'file', src: 'https://archive.org/download/a/b.mp4', title: 'A', duration: 600 });
+  t.room.control('aaaaaaaaaaaaaaaa', { action: 'play' });
+  t.tick(30_000);
+  t.room.rewindRequest('member1xxxxxxxxx');
+  const r = t.room.rewindRequest('member2xxxxxxxxx');
+  assert.equal(r.count, 1, 'same address counted once');
+  assert.ok(t.room.kick('aaaaaaaaaaaaaaaa', 'member1xxxxxxxxx').ok);
+  assert.ok(t.room.bannedIps.has('ip-b'));
+});

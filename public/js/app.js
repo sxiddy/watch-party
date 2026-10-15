@@ -37,7 +37,7 @@
     entering = false;
     if (!res.ok) {
       history.replaceState(null, '', '/');
-      const why = { 'not-found': 'That room doesn’t exist, or everyone left a while ago. Start a new one?', 'room-full': 'That room is full (50 people).', removed: 'The host removed you from that room.', offline: 'Can’t reach the server right now.' }[res.error] || 'Couldn’t join (' + res.error + ')';
+      const why = { 'not-found': 'That room doesn’t exist, or everyone left a while ago. Start a new one?', 'room-full': 'That room is full (50 people).', removed: 'The host removed you from that room.', locked: 'The host has locked that room.', 'slow-down': 'Too many tries, give it a minute.', offline: 'Can’t reach the server right now.' }[res.error] || 'Couldn’t join (' + res.error + ')';
       showLanding(why);
       return;
     }

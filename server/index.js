@@ -90,7 +90,7 @@ const wrap = fn => (req, res) => fn(req, res).catch(e => {
 });
 
 app.get('/api/movies/home', wrap(async (req, res) => res.json(await movies.home())));
-app.get('/api/movies/search', wrap(async (req, res) => res.json({ results: await movies.search(req.query.q) })));
+app.get('/api/movies/search', perMinute('search', 90, 'Slow down a little'), wrap(async (req, res) => res.json({ results: await movies.search(req.query.q) })));
 app.get('/api/movies/discover', wrap(async (req, res) => {
   const f = {};
   for (const k of ['genre', 'decade', 'minRating', 'maxRuntime', 'lang', 'sort']) if (req.query[k]) f[k] = cleanText(String(req.query[k]), 40);
@@ -136,8 +136,16 @@ io.on('connection', socket => {
   // clock sync: client sends nothing, we answer with our clock. Kept tiny on purpose.
   socket.on('tp', ack => typeof ack === 'function' && ack(Date.now()));
 
+  const ip = ipKey(socket);
+  const joinTimes = [];
+
   socket.on('join', (p = {}, ack) => {
     if (typeof ack !== 'function') return;
+    const now = Date.now();
+    while (joinTimes.length && now - joinTimes[0] > 30_000) joinTimes.shift();
+    if (joinTimes.length >= 6) return ack({ ok: false, error: 'slow-down' });
+    joinTimes.push(now);
+
     const code = String(p.code || '').toUpperCase().slice(0, 8);
     const room = rooms.get(code);
     if (!room) return ack({ ok: false, error: 'not-found' });
@@ -148,8 +156,20 @@ io.on('connection', socket => {
     if (!/^[A-Za-z0-9_-]{16,64}$/.test(secret)) return ack({ ok: false, error: 'bad-id' });
     if (!room.secrets) room.secrets = new Map();
     let id = room.secrets.get(secret);
+    // One socket is one person. Switching to a new identity on a live socket
+    // used to leave the old one "connected" forever (a ghost that filled seats
+    // and voted on rewinds), so it isn't allowed.
+    if (socket.data.code === code && socket.data.id && id !== socket.data.id) return ack({ ok: false, error: 'already-joined' });
     if (!id) {
       if (room.connectedMembers().length >= 50) return ack({ ok: false, error: 'room-full' });
+      if (room.settings.locked) return ack({ ok: false, error: 'locked' });
+      if (ip && room.bannedIps && room.bannedIps.has(ip)) return ack({ ok: false, error: 'removed' });
+      // new identities per address: plenty for a house full of people, not for a script
+      if (!room.newIds) room.newIds = new Map();
+      const recent = (room.newIds.get(ip) || []).filter(t => now - t < 10 * 60_000);
+      if (ip && recent.length >= 12) return ack({ ok: false, error: 'slow-down' });
+      recent.push(now);
+      if (ip) room.newIds.set(ip, recent);
       id = shortId();
       room.secrets.set(secret, id);
     }
@@ -160,7 +180,7 @@ io.on('connection', socket => {
     socket.data.code = code;
     socket.data.id = id;
     socket.join(code);
-    room.join(id, p.name, socket.id);
+    room.join(id, p.name, socket.id, { ip });
     ack({ ok: true, snapshot: room.snapshot(id), serverTs: Date.now() });
     room.tick(); // push the member list right away
   });
@@ -237,6 +257,19 @@ io.on('connection', socket => {
 
   socket.on('disconnect', () => leave(socket));
 });
+
+// Where a socket comes from, hashed so raw addresses never sit in memory.
+// Same rule as `trust proxy` 1: the last x-forwarded-for entry is the one
+// Render's proxy added, earlier ones are whatever the client sent.
+const IP_SALT = require('crypto').randomBytes(16).toString('hex');
+function ipKey(socket) {
+  const xff = String(socket.handshake.headers['x-forwarded-for'] || '').split(',').map(s => s.trim()).filter(Boolean);
+  const proxied = xff.length > 0;
+  const addr = xff.pop() || socket.handshake.address || '';
+  // this machine (tests, the bench, two tabs on the dev laptop) isn't limited
+  if (!proxied && /^(::1$|127\.|::ffff:127\.)/.test(addr)) return null;
+  return require('crypto').createHash('sha256').update(IP_SALT + addr).digest('hex').slice(0, 16);
+}
 
 function leave(socket) {
   const room = rooms.get(socket.data.code);
