@@ -287,6 +287,25 @@
     $('#volume').oninput = applyVolume;
     $('#btn-unblock').onclick = () => sync.unblock();
 
+    // Like YouTube: click the picture to play/pause, double-click for fullscreen.
+    // The single click waits a moment so a double-click doesn't also pause.
+    let tapT = null, toldGuest = false;
+    const screen = $('#player-host');
+    screen.addEventListener('click', () => {
+      if (!S.playback?.media) return;
+      clearTimeout(tapT);
+      tapT = setTimeout(() => {
+        if (!canControl()) {
+          if (!toldGuest) { toldGuest = true; toast('Only the host and co-hosts can pause. Hit “Missed that?” if you need a rewind.'); }
+          return;
+        }
+        const willPlay = !S.playback.playing;
+        control(willPlay ? 'play' : 'pause');
+        flashTap(willPlay);
+      }, 220);
+    });
+    screen.addEventListener('dblclick', () => { clearTimeout(tapT); $('#btn-full').click(); });
+
     // seek bar
     const seek = $('#seek');
     let dragging = false;
@@ -878,6 +897,16 @@
   }
 
   // ---------- notices, dialogs ----------
+
+  // the little ▶ / ❚❚ that pops in the middle when you click the picture
+  function flashTap(playing) {
+    const el = $('#tap-flash');
+    el.textContent = playing ? '▶' : '❚❚';
+    el.hidden = false;
+    el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.hidden = true; }, 600);
+  }
 
   let noticeTimer;
   function showNotice(text) {
