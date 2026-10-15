@@ -1,32 +1,198 @@
-[
-  {
-    "mode": "rate nudging + seek (HTML5 video)",
-    "players": 12,
-    "minutes": 20,
-    "samples": 280581,
-    "p50ms": 28.7,
-    "p95ms": 45.9,
-    "p99ms": 51,
-    "maxMs": 74.2,
-    "over500msPct": 0,
-    "inFlight": {
-      "p99ms": 51,
-      "maxMs": 74.2
-    }
-  },
-  {
-    "mode": "seek only (YouTube)",
-    "players": 12,
-    "minutes": 20,
-    "samples": 275282,
-    "p50ms": 141.6,
-    "p95ms": 283,
-    "p99ms": 298.6,
-    "maxMs": 415.5,
-    "over500msPct": 0,
-    "inFlight": {
-      "p99ms": 302.9,
-      "maxMs": 765.7
-    }
+{
+  "when": "2026-10-15T18:42:04.117Z",
+  "rateCap": "6%",
+  "seeds": {
+    "1": [
+      {
+        "mode": "rate nudging + seek (HTML5 video)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 278560,
+        "p50ms": 25.4,
+        "p95ms": 45.2,
+        "p99ms": 52.3,
+        "maxMs": 338.2,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 52.3,
+          "maxMs": 338.2
+        }
+      },
+      {
+        "mode": "seek only (YouTube)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 275909,
+        "p50ms": 139.7,
+        "p95ms": 280.6,
+        "p99ms": 296.8,
+        "maxMs": 403.2,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 300,
+          "maxMs": 741.1
+        }
+      }
+    ],
+    "3": [
+      {
+        "mode": "rate nudging + seek (HTML5 video)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 280640,
+        "p50ms": 29.2,
+        "p95ms": 39.7,
+        "p99ms": 49.5,
+        "maxMs": 309,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 49.5,
+          "maxMs": 309
+        }
+      },
+      {
+        "mode": "seek only (YouTube)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 273916,
+        "p50ms": 150.4,
+        "p95ms": 286.9,
+        "p99ms": 304.3,
+        "maxMs": 422,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 314,
+          "maxMs": 809.7
+        }
+      }
+    ],
+    "7": [
+      {
+        "mode": "rate nudging + seek (HTML5 video)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 280581,
+        "p50ms": 28.8,
+        "p95ms": 46.1,
+        "p99ms": 51.4,
+        "maxMs": 206.8,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 51.4,
+          "maxMs": 206.8
+        }
+      },
+      {
+        "mode": "seek only (YouTube)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 275282,
+        "p50ms": 141.6,
+        "p95ms": 283,
+        "p99ms": 298.6,
+        "maxMs": 415.5,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 302.9,
+          "maxMs": 765.7
+        }
+      }
+    ],
+    "42": [
+      {
+        "mode": "rate nudging + seek (HTML5 video)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 281246,
+        "p50ms": 31.1,
+        "p95ms": 47.9,
+        "p99ms": 54.6,
+        "maxMs": 258.7,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 54.6,
+          "maxMs": 258.7
+        }
+      },
+      {
+        "mode": "seek only (YouTube)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 275012,
+        "p50ms": 145.9,
+        "p95ms": 288.5,
+        "p99ms": 304,
+        "maxMs": 461.2,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 309.3,
+          "maxMs": 796.9
+        }
+      }
+    ],
+    "99": [
+      {
+        "mode": "rate nudging + seek (HTML5 video)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 281214,
+        "p50ms": 27.4,
+        "p95ms": 48.4,
+        "p99ms": 53.1,
+        "maxMs": 271.3,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 53.1,
+          "maxMs": 271.3
+        }
+      },
+      {
+        "mode": "seek only (YouTube)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 276707,
+        "p50ms": 145.4,
+        "p95ms": 284.6,
+        "p99ms": 301.6,
+        "maxMs": 460.5,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 308,
+          "maxMs": 761.5
+        }
+      }
+    ],
+    "1234": [
+      {
+        "mode": "rate nudging + seek (HTML5 video)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 279859,
+        "p50ms": 25.6,
+        "p95ms": 39.4,
+        "p99ms": 47.2,
+        "maxMs": 258.7,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 47.2,
+          "maxMs": 258.7
+        }
+      },
+      {
+        "mode": "seek only (YouTube)",
+        "players": 12,
+        "minutes": 20,
+        "samples": 277586,
+        "p50ms": 144.2,
+        "p95ms": 288,
+        "p99ms": 304,
+        "maxMs": 453.4,
+        "over500msPct": 0,
+        "inFlight": {
+          "p99ms": 306.7,
+          "maxMs": 854.4
+        }
+      }
+    ]
   }
-]
+}
