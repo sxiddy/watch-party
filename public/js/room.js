@@ -826,14 +826,51 @@
         h('div.fine', `${c.media.title} · clipped by `, h('span', { style: { color: c.color } }, c.name)),
         h('div.clip-btns',
           here && canControl() ? h('button.btn.btn-small', { onclick: () => net.request('clip:play', { id: c.id }) }, 'Replay for everyone') : null,
-          h('button.btn.btn-small.btn-ghost', { onclick: () => clipCard(c) }, 'Save as image'),
+          c.media.src ? h('button.btn.btn-small.btn-ghost', { onclick: e => downloadClip(c, e.currentTarget) }, 'Download clip') : null,
+          c.media.ytId ? h('a.btn.btn-small.btn-ghost', { href: `https://youtu.be/${c.media.ytId}?t=${Math.floor(c.start)}`, target: '_blank', rel: 'noopener' }, 'Watch this moment on YouTube') : null,
+          h('button.btn.btn-small.btn-ghost', { onclick: e => clipCard(c, e.currentTarget) }, 'Save as image'),
           c.by === S.me || isHost() ? h('button.link-btn', { onclick: () => net.request('clip:remove', { id: c.id }) }, 'delete') : null));
     }));
     renderClipMarks();
   }
 
+  const clipUrl = (c, type) => apiUrl('/api/clip?' + new URLSearchParams({ src: c.media.src, start: c.start, end: c.end, type, name: 'backrow-' + c.media.title }));
+
+  // The server cuts the real seconds out of the film (the browser isn't allowed to record archive.org video)
+  async function downloadClip(c, btn) {
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Cutting… (up to 30 s)';
+    try {
+      const res = await fetch(clipUrl(c, 'mp4'));
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Couldn’t cut that clip');
+      const url = URL.createObjectURL(await res.blob());
+      const a = h('a', { href: url, download: `backrow-${c.media.title.replace(/\W+/g, '-').toLowerCase()}-${Math.floor(c.start)}s.mp4` });
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      toast('Clip saved');
+    } catch (e) { toast(e.message, 'bad'); }
+    btn.disabled = false; btn.textContent = label;
+  }
+
+  // a frame from the clip for the card: the real one for archive films, the YouTube thumbnail otherwise
+  function clipPicture(c) {
+    const src = c.media.src ? clipUrl(c, 'jpg') : c.media.ytId ? `https://i.ytimg.com/vi/${c.media.ytId}/hqdefault.jpg` : c.media.poster;
+    if (!src) return Promise.resolve(null);
+    return new Promise(res => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous'; // so the card can still be saved after drawing it
+      img.onload = () => res(img);
+      img.onerror = () => res(null);
+      img.src = src;
+    });
+  }
+
   // a printable ticket-stub card for a clip (same idea as the share card in my CGPA site)
-  function clipCard(c) {
+  async function clipCard(c, btn) {
+    const label = btn && btn.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = 'Grabbing the frame…'; }
+    const pic = await clipPicture(c);
+    if (btn) { btn.disabled = false; btn.textContent = label; }
     const W = 1080, H = 1350;
     const cv = h('canvas', { width: W, height: H });
     const g = cv.getContext('2d');
@@ -844,17 +881,28 @@
     g.font = '600 34px "IBM Plex Mono"'; g.textAlign = 'right';
     g.fillText('ROOM ' + S.code, W - 70, 110);
     g.textAlign = 'left'; g.fillStyle = '#1b1817';
-    g.font = '600 34px "IBM Plex Mono"'; g.fillText('A MOMENT FROM', 70, 330);
-    wrapText(g, c.media.title.toUpperCase(), 70, 420, W - 140, 96, '96px Anton');
+    g.font = '600 34px "IBM Plex Mono"'; g.fillText(pic ? ('A MOMENT FROM ' + c.media.title.toUpperCase()).slice(0, 44) : 'A MOMENT FROM', 70, pic ? 310 : 330);
+    if (pic) {
+      // the frame fills a 16:9 window, cropped from the middle like a cinema screen
+      const bw = W - 140, bh = Math.round(bw * 9 / 16) - 60, scale = Math.max(bw / pic.width, bh / pic.height);
+      const sw = bw / scale, sh = bh / scale;
+      g.drawImage(pic, (pic.width - sw) / 2, (pic.height - sh) / 2, sw, sh, 70, 360, bw, bh);
+      g.strokeStyle = '#1b1817'; g.lineWidth = 6; g.strokeRect(70, 360, bw, bh);
+    } else {
+      wrapText(g, c.media.title.toUpperCase(), 70, 420, W - 140, 96, '96px Anton');
+    }
     g.strokeStyle = '#1b1817'; g.setLineDash([18, 14]); g.lineWidth = 4;
-    g.beginPath(); g.moveTo(40, 760); g.lineTo(W - 40, 760); g.stroke(); g.setLineDash([]);
+    g.beginPath(); g.moveTo(40, 866); g.lineTo(W - 40, 866); g.stroke(); g.setLineDash([]);
     g.font = '500 64px "Work Sans"';
-    wrapText(g, '“' + c.title + '”', 70, 880, W - 140, 78, '500 64px "Work Sans"');
+    wrapText(g, '“' + c.title + '”', 70, 960, W - 140, 72, '500 58px "Work Sans"');
     g.font = '600 48px "IBM Plex Mono"'; g.fillStyle = '#d9472b';
     g.fillText(`${fmt(c.start)} → ${fmt(c.end)}`, 70, 1110);
     g.fillStyle = '#1b1817'; g.font = '400 36px "Work Sans"';
     g.fillText(`clipped by ${c.name} · ${new Date(c.ts).toLocaleDateString()}`, 70, 1200);
-    const a = h('a', { download: `backrow-${c.title.replace(/\W+/g, '-').toLowerCase() || 'clip'}.png`, href: cv.toDataURL('image/png') });
+    let href;
+    // a picture the browser won't let us save: make the card without it
+    try { href = cv.toDataURL('image/png'); } catch (e) { return clipCard({ ...c, media: { ...c.media, src: null, ytId: null, poster: null } }); }
+    const a = h('a', { download: `backrow-${c.title.replace(/\W+/g, '-').toLowerCase() || 'clip'}.png`, href });
     document.body.append(a); a.click(); a.remove();
   }
 

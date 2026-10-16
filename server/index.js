@@ -10,6 +10,7 @@ const { roomCode, cleanText, shortId } = require('./util');
 const movies = require('./movies');
 const { findSources, captionsProxy } = require('./sources');
 const { youtubeInfo } = require('./youtube');
+const clips = require('./clips');
 
 const PORT = +process.env.PORT || 3000;
 const ROOM_IDLE_MS = 30 * 60_000;
@@ -116,6 +117,11 @@ app.get('/api/captions', perMinute('captions', 30, 'Slow down a little'), wrap(a
 app.get('/api/youtube/:id([A-Za-z0-9_-]{11})', perMinute('youtube', 60, 'Slow down a little'), wrap(async (req, res) => {
   res.set('Cache-Control', 'public, max-age=3600').json(await youtubeInfo(req.params.id));
 }));
+
+app.get('/api/clip', perMinute('clip', 10, 'That’s a lot of clips, give it a minute'), (req, res) => {
+  const q = req.query;
+  clips.sendClip(res, { src: String(q.src || ''), start: q.start, end: q.end, type: q.type === 'jpg' ? 'jpg' : 'mp4', name: cleanText(String(q.name || ''), 60) });
+});
 
 app.get('/api/health', (req, res) => res.json({
   ok: true, rooms: rooms.size, tmdb: movies.enabled(),

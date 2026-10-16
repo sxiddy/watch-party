@@ -689,7 +689,10 @@ class Room {
     if (e - s > 120) s = e - 120;
     const clip = {
       id: shortId(), by: id, name: m.name, color: m.color, itemId: this.playback.itemId,
-      media: { title: this.playback.media.title, poster: this.playback.media.poster },
+      // where it came from, so the Clips tab can offer the real clip (archive films) or a YouTube link
+      media: { title: this.playback.media.title, poster: this.playback.media.poster, kind: this.playback.media.kind,
+        src: this.playback.media.kind === 'file' && trustedVideo(this.playback.media.src) ? this.playback.media.src : null,
+        ytId: this.playback.media.ytId || null },
       start: s, end: e, title: cleanText(title, 80) || 'A moment', ts: this.now(),
     };
     this.highlights.push(clip);

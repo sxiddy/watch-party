@@ -58,7 +58,7 @@ So for something like *Ted 2*: it's on a streaming service, so the room uses com
 - **Intermission**: a timed break with a "who's back" list. It restarts with a countdown when the timer ends or everyone's back
 - **Group-taste picks**: a "Picked for this room" row built from what the whole room liked and queued (TMDB recommendations plus genre weighting)
 - **Timestamped chat**: every message shows the video time, and clicking it jumps everyone there
-- **Highlight clips**: save the last 15 s, replay them for the room (it stops at the end of the clip), or save a ticket-stub image to share
+- **Highlight clips**: save the last 15 s and replay them for the room (it stops at the end of the clip). For Internet Archive films you can **download the real clip as an MP4**: the server cuts those seconds out of the film with ffmpeg (copying, not re-encoding, so it's quick), because the browser isn't allowed to record archive.org video itself. The ticket-stub image shows a real frame from the moment. YouTube clips get a link to that exact second instead, since YouTube doesn't allow downloads
 - **HD button**: when a sharper copy of the film exists, each person can switch to it on their own (it's about your connection, so it never changes anyone else's picture). You stay in sync while it switches, and if HD can't keep up within 15 s you're put back on the normal copy
 - **Subtitles together**: the host can turn subtitles on for everyone or drop in a `.srt` that the whole room gets; everyone else can choose their own. One caption renderer works for every player, including YouTube and companion mode
 - **Reaction heatmap** on the seek bar, so you can see where the room lost it, plus a big "3 of you at once" burst when everyone hits the same emoji
