@@ -248,6 +248,28 @@ body.can-control .player-host { cursor: pointer; }
 .search-box { flex: 1; min-width: 220px; }
 .search-box input { width: 100%; background: var(--hall-2); border: 1px solid var(--line); padding: 9px 12px; border-radius: 3px; }
 .search-box input:focus { border-color: var(--cream-3); }
+
+/* YouTube: paste a link, the whole room watches it */
+.yt-strip { margin-top: 12px; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 3px; }
+.yt-strip:focus-within { border-color: var(--cream-3); border-style: solid; }
+.yt-tag { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--cream-2); white-space: nowrap; cursor: text; }
+.yt-tag svg { width: 20px; height: 20px; color: var(--red); }
+.yt-strip input { width: 100%; min-width: 0; background: var(--hall-2); border: 1px solid var(--line); padding: 8px 10px; border-radius: 3px; color: inherit; }
+.yt-strip input:focus { border-color: var(--cream-3); outline: none; }
+.yt-strip .error { grid-column: 1 / -1; margin: 0; }
+.yt-strip .error:empty { display: none; }
+.yt-preview { grid-column: 1 / -1; display: flex; gap: 14px; align-items: flex-start; padding-top: 6px; }
+.yt-preview[hidden] { display: none; }
+.yt-thumb { width: 176px; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--line); flex: none; background: #000; }
+.yt-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.yt-info b { font-weight: 600; line-height: 1.3; }
+.yt-info span { font-size: 13px; color: var(--cream-2); }
+.yt-btns { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+@media (max-width: 560px) {
+  .yt-strip { grid-template-columns: 1fr; }
+  .yt-preview { flex-direction: column; }
+  .yt-thumb { width: 100%; }
+}
 .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 6px; font-size: 13.5px; }
 .filters select { background: var(--hall-2); border: 1px solid var(--line); padding: 5px 8px; border-radius: 3px; }
 .filters .btn:first-of-type { margin-left: auto; }

@@ -61,6 +61,12 @@
   async function render() {
     const out = $('#disc-results');
     const q = $('#search').value.trim();
+    // a YouTube link pasted into the movie search goes to the YouTube box
+    if (window.YtLink.looksLikeYouTube(q)) {
+      $('#search').value = '';
+      showYouTube(q);
+      return render();
+    }
     $('#f-clear').hidden = !filtersActive();
     if (q) return renderSearch(q);
     if (filtersActive()) return renderFiltered();
@@ -260,12 +266,72 @@
       tmdbOn && movie.source === 'tmdb' ? h('p.fine.tmdb-credit', 'Movie data from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.') : null);
   }
 
+  // ---------- YouTube: paste a link, everyone watches it together ----------
+
+  let ytKey = null; // the video (and start time) being previewed right now
+
+  function clearYouTube() {
+    ytKey = null;
+    $('#yt-url').value = '';
+    $('#yt-error').textContent = '';
+    $('#yt-preview').hidden = true;
+  }
+
+  function showYouTube(text) {
+    $('#yt-url').value = text;
+    $('#yt-url').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    previewYouTube(text);
+  }
+
+  async function previewYouTube(text) {
+    const box = $('#yt-preview'), err = $('#yt-error');
+    const link = window.YtLink.parse(text);
+    err.textContent = '';
+    if (!link) {
+      ytKey = null;
+      box.hidden = true;
+      if (text.trim().length > 8) err.textContent = 'That doesn’t look like a YouTube link.';
+      return;
+    }
+    const key = link.id + '@' + link.start;
+    if (key === ytKey) return;
+    ytKey = key;
+    box.hidden = false;
+    box.replaceChildren(h('p.loading', 'Looking it up…'));
+    let info;
+    try { info = await api('/api/youtube/' + link.id); }
+    catch (e) { info = { ok: true, title: 'YouTube video', channel: '', thumb: 'https://i.ytimg.com/vi/' + link.id + '/hqdefault.jpg' }; } // lookup failed, it may still play
+    if (ytKey !== key) return; // they pasted something else meanwhile
+    if (!info.ok) {
+      box.hidden = true;
+      err.textContent = info.error === 'no-embed'
+        ? 'Whoever uploaded this doesn’t let it play on other sites, so it can’t be watched here. Try another upload.'
+        : 'Couldn’t find that video. It may be private or deleted.';
+      return;
+    }
+    const media = { kind: 'youtube', ytId: link.id, title: info.title, poster: info.thumb, sourceLabel: info.channel ? 'YouTube · ' + info.channel : 'YouTube', startAt: link.start };
+    const ctl = ctx.canControl();
+    box.replaceChildren(
+      h('img.yt-thumb', { src: info.thumb, alt: '' }),
+      h('div.yt-info',
+        h('b', info.title),
+        h('span', [info.channel, link.start ? 'starts at ' + fmt(link.start) : null].filter(Boolean).join(' · ')),
+        h('div.yt-btns',
+          ctl ? h('button.btn.btn-small', { type: 'button', onclick: () => { ctx.play(media); clearYouTube(); } }, 'Watch it now') : null,
+          h('button.btn.btn-small' + (ctl ? '.btn-ghost' : ''), { type: 'button', onclick: () => { ctx.queue(media); clearYouTube(); toast(ctl ? 'Added to the queue' : 'Suggested. It’s in the queue for the host to play'); } },
+            ctl ? 'Add to queue' : 'Suggest it'),
+          h('button.link-btn', { type: 'button', onclick: clearYouTube }, 'cancel'))));
+  }
+
   // ---------- wiring ----------
 
   function init(roomCtx) {
     ctx = roomCtx;
     let t;
     $('#search').addEventListener('input', () => { clearTimeout(t); t = setTimeout(render, 220); });
+    let yt;
+    $('#yt-url').addEventListener('input', e => { clearTimeout(yt); yt = setTimeout(() => previewYouTube(e.target.value), 250); });
+    $('#yt-form').addEventListener('submit', e => { e.preventDefault(); clearTimeout(yt); previewYouTube($('#yt-url').value); });
     ['#f-genre', '#f-decade', '#f-runtime', '#f-rating', '#f-lang', '#f-free'].forEach(s => $(s).addEventListener('change', render));
     $('#f-clear').addEventListener('click', () => {
       ['#f-genre', '#f-decade', '#f-runtime', '#f-rating', '#f-lang'].forEach(s => { $(s).value = ''; });
@@ -283,5 +349,5 @@
     } catch (e) { el.remove(); }
   }
 
-  window.Discover = { init, render, refreshRecs, openMovie, landingStrip, mediaFrom, whereToWatch };
+  window.Discover = { init, render, refreshRecs, openMovie, landingStrip, mediaFrom, whereToWatch, showYouTube };
 })();

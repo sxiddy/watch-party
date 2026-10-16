@@ -4,7 +4,7 @@ A watch-party site. Make a room, send your friends the link (or let them scan th
 
 Built for the Watch Party task: synced playback for 10+ people, movie discovery, reactions, chat, a shared queue, polls, host transfer, drift correction, and solid handling of late joins, reconnects and people clicking at the same time.
 
-![status](https://img.shields.io/badge/tests-42%20passing-3fa796) ![p95](https://img.shields.io/badge/control%20p95-2%20ms%20same%20machine%20%C2%B7%2032%20ms%20sim.%20Wi--Fi-d9472b) ![drift](https://img.shields.io/badge/drift%20after%20correction-%E2%89%A4%20461%20ms-f2b33d)
+![status](https://img.shields.io/badge/tests-46%20passing-3fa796) ![p95](https://img.shields.io/badge/control%20p95-2%20ms%20same%20machine%20%C2%B7%2032%20ms%20sim.%20Wi--Fi-d9472b) ![drift](https://img.shields.io/badge/drift%20after%20correction-%E2%89%A4%20461%20ms-f2b33d)
 
 **Try it live: https://watchpartyvinnovate.vercel.app**. Open it, make a room, then open the invite link on your phone or in a second tab. It's on free hosting that sleeps when nobody's using it, so the first visit can take up to a minute to wake the server (the page tells you when that's happening).
 
@@ -20,7 +20,7 @@ Open it in two browser tabs (or two devices on the same Wi-Fi via `http://<your-
 **Optional:** copy `.env.example` to `.env` and add a free [TMDB](https://www.themoviedb.org/settings/api) key. You then get real posters, trending rows, "where is it streaming in India", trailers and smarter recommendations. Without a key it uses the ~60-movie catalog in `public/data/movies.json`, and everything still works.
 
 ```bash
-npm test           # 42 tests: room rules, permissions, sync math, fuzzy search, a 12-person integration run
+npm test           # 46 tests: room rules, permissions, sync math, fuzzy search, a 12-person integration run
 npm run bench      # propagation latency with 15 bot viewers
 npm run drift-sim  # drift correction against misbehaving fake players
 ```
@@ -35,7 +35,7 @@ The hard part of any watch party: Netflix and Prime lock their videos, so no web
 
 1. **Free films**: Blender's open movies (Big Buck Bunny, Sintel, Tears of Steel…), streamed straight away.
 2. **Internet Archive**, for public-domain films only: ones our catalog marks as public domain, or anything from 1930 or earlier (US copyright runs 95 years). The server matches on title and year, only accepts files that are feature length, and skips dubbed copies, trailers and formats browsers can't play. It brings along subtitle files when there are any. It never searches the Archive for a modern studio film, because the copies there are usually clips or uploads nobody had the rights to.
-3. **YouTube**: the official trailer (via TMDB), or any YouTube link you paste.
+3. **YouTube**: the official trailer (via TMDB), or any YouTube video. Paste a link into the YouTube box under the search (or straight into the search) and you get a preview with the real title and channel, then everyone watches it in sync. Links with a start time (`?t=90`) start everyone there. Guests can suggest a video, the host decides.
 4. **Everyone uses their own file**: the host picks a file, everyone else picks their copy. Nothing is uploaded. The app checks that name and size match, then syncs it like any other video.
 5. **Companion mode**: everyone plays it on their own Netflix, Prime or TV. Back Row runs the shared clock, the 3-2-1 start, chat and reactions, and has a "where's your screen at?" checker that tells you how many seconds to pause or skip. For paid films, the movie sheet and companion screen link to where it's legally streaming or for rent in your country (JustWatch, via TMDB when there's a key, a JustWatch search when there isn't).
 
@@ -81,9 +81,11 @@ server/
   room.js      all the room rules (no sockets inside, so it can be tested with a fake clock)
   movies.js    TMDB + bundled catalog, fuzzy re-ranking
   sources.js   "where can we watch this": Archive lookup, trailers, subtitle proxy
+  youtube.js   title + channel for a pasted YouTube link (oEmbed, no key)
 public/
   js/sync-core.js   clock sync + drift controller (shared by browser, tests and sim)
   js/player.js      adapters for <video>, YouTube and companion mode + the sync loop
+  js/ytlink.js      reads pasted YouTube links (id + start time), shared with the tests
   js/room.js        the room UI
   js/discover.js    rows, search, filters, movie sheet
   js/qr.js          QR maker, reused from my VIT CGPA calculator

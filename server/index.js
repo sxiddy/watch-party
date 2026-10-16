@@ -9,6 +9,7 @@ const { Room } = require('./room');
 const { roomCode, cleanText, shortId } = require('./util');
 const movies = require('./movies');
 const { findSources, captionsProxy } = require('./sources');
+const { youtubeInfo } = require('./youtube');
 
 const PORT = +process.env.PORT || 3000;
 const ROOM_IDLE_MS = 30 * 60_000;
@@ -110,6 +111,10 @@ app.get('/api/sources', perMinute('sources', 30, 'Slow down a little'), wrap(asy
 app.get('/api/captions', perMinute('captions', 30, 'Slow down a little'), wrap(async (req, res) => {
   const vtt = await captionsProxy(String(req.query.u || ''));
   res.type('text/vtt').set('Cache-Control', 'public, max-age=86400').send(vtt);
+}));
+
+app.get('/api/youtube/:id([A-Za-z0-9_-]{11})', perMinute('youtube', 60, 'Slow down a little'), wrap(async (req, res) => {
+  res.set('Cache-Control', 'public, max-age=3600').json(await youtubeInfo(req.params.id));
 }));
 
 app.get('/api/health', (req, res) => res.json({

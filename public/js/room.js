@@ -384,10 +384,10 @@
       e.preventDefault();
       const url = $('#link-url').value.trim();
       const title = $('#link-title').value.trim();
-      const yt = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/);
+      // YouTube links get the proper preview (real title, start time) in the YouTube box
+      if (window.YtLink.parse(url)) { $('#dlg-link').close(); $('#link-url').value = ''; return Discover.showYouTube(url); }
       let media;
-      if (yt) media = { kind: 'youtube', ytId: yt[1], title: title || 'YouTube video', sourceLabel: 'YouTube' };
-      else if (/^https?:\/\/\S+$/i.test(url)) media = { kind: 'file', src: url, title: title || decodeURIComponent(url.split('/').pop().split('?')[0]).replace(/\.[a-z0-9]+$/i, '') || 'Video', sourceLabel: 'Link' };
+      if (/^https?:\/\/\S+$/i.test(url)) media = { kind: 'file', src: url, title: title || decodeURIComponent(url.split('/').pop().split('?')[0]).replace(/\.[a-z0-9]+$/i, '') || 'Video', sourceLabel: 'Link' };
       else { $('#link-error').textContent = 'That doesn’t look like a link'; return; }
       const how = e.submitter ? e.submitter.value : 'queue';
       (how === 'play' ? playMedia : queueMedia)(media);

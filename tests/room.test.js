@@ -339,3 +339,11 @@ test('kicking also remembers the address; two tabs on one address are one rewind
   assert.ok(t.room.kick('aaaaaaaaaaaaaaaa', 'member1xxxxxxxxx').ok);
   assert.ok(t.room.bannedIps.has('ip-b'));
 });
+
+test('a YouTube link with a start time starts everyone there', () => {
+  const t = setup(2);
+  assert.ok(t.room.setMedia(t.ids[0], { kind: 'youtube', ytId: 'dQw4w9WgXcQ', title: 'R', startAt: 30, poster: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg' }).ok);
+  assert.equal(t.room.position(), 30);
+  assert.equal(t.room.playback.media.poster, 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
+  assert.equal(t.room.setMedia(t.ids[0], { kind: 'youtube', ytId: 'not an id!', title: 'x' }).error, 'bad-media');
+});

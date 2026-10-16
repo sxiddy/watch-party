@@ -25,7 +25,7 @@ const COLORS = ['#e4572e', '#29a19c', '#f3a712', '#6a8eae', '#c45ab3', '#5b8c5a'
 // Everyone in the room loads whatever image or video a queued item points at,
 // so only a few known hosts are allowed for posters, and links to video files
 // from anywhere else can only be added by someone with control.
-const POSTER_HOSTS = ['image.tmdb.org', 'archive.org', 'wikimedia.org'];
+const POSTER_HOSTS = ['image.tmdb.org', 'archive.org', 'wikimedia.org', 'i.ytimg.com'];
 const hostOf = u => { try { return new URL(u).hostname; } catch { return ''; } };
 const onHost = (u, hosts) => { const h = hostOf(u); return hosts.some(x => h === x || h.endsWith('.' + x)); };
 const trustedVideo = u => onHost(u, ['archive.org']);
@@ -55,6 +55,8 @@ function cleanMedia(m) {
   } else if (kind === 'youtube') {
     out.ytId = youtubeId(m.ytId || m.src);
     if (!out.ytId) return null;
+    // a link like youtu.be/…?t=90 starts everyone at 1:30
+    out.startAt = num(m.startAt, 0, 86400, 0);
   } else if (kind === 'local') {
     const k = m.localKey || {};
     out.localKey = { name: cleanText(k.name, 200), size: num(k.size, 0, 1e13, 0) };
@@ -242,7 +244,7 @@ class Room {
     this.emit('captions', null);
     const t = this.now();
     this._publishPlayback({
-      itemId: shortId(), media, playing: !!opts.autoplay, basePos: 0,
+      itemId: shortId(), media, playing: !!opts.autoplay, basePos: media.startAt || 0,
       baseTime: t + (opts.autoplay ? COUNTDOWN_MS : 0), duration: media.duration || 0, stopAt: null,
     }, id, opts.autoplay ? 'countdown' : 'media');
     this._noteTaste(media, id, 1);

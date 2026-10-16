@@ -173,6 +173,12 @@
             <input id="search" type="search" placeholder="Search movies, actors, directors… typos are fine" autocomplete="off">
           </div>
         </div>
+        <form class="yt-strip" id="yt-form" autocomplete="off">
+          <label class="yt-tag" for="yt-url"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15V9l5.2 3z"/></svg>Or a YouTube video</label>
+          <input id="yt-url" type="url" inputmode="url" placeholder="Paste a YouTube link and everyone watches it together">
+          <p class="error" id="yt-error"></p>
+          <div class="yt-preview" id="yt-preview" hidden></div>
+        </form>
         <div class="filters" id="filters">
           <select id="f-genre" aria-label="Genre"><option value="">Any genre</option></select>
           <select id="f-decade" aria-label="Decade"><option value="">Any year</option></select>
@@ -314,7 +320,7 @@
   <button class="dlg-x" data-close aria-label="Close">×</button>
   <form id="link-form" method="dialog">
     <h3>Paste a link</h3>
-    <p class="fine">A YouTube link, or a direct video file (.mp4 / .webm).</p>
+    <p class="fine">A direct video file (.mp4 / .webm). YouTube links work here too.</p>
     <input id="link-url" class="wide" placeholder="https://…" required>
     <input id="link-title" class="wide" placeholder="Title (optional)" maxlength="120">
     <div class="poll-row">
@@ -337,6 +343,7 @@
 <script src="/vendor/socket.io-4.8.min.js"></script>
 <script src="/js/sync-core.js"></script>
 <script src="/js/fuzzy.js"></script>
+<script src="/js/ytlink.js"></script>
 <script src="/js/qr.js"></script>
 <script src="/js/net.js"></script>
 <script src="/js/player.js"></script>
