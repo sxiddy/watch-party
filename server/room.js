@@ -76,6 +76,7 @@ class Room {
     this.now = opts.now || Date.now;
     this.emit = opts.emit || (() => {});
     this.createdAt = this.now();
+    this.everJoined = new Set();
     this.lastActiveAt = this.createdAt;
 
     this.members = new Map();
@@ -118,6 +119,7 @@ class Room {
         _ops: [], _chats: [], _reacts: [], _bufferTriggeredAt: 0,
       };
       this.members.set(id, m);
+      this.everJoined.add(id);
     }
     if (opts.ip) m.ip = opts.ip;
     const wanted = cleanText(name, 24);
@@ -227,6 +229,7 @@ class Room {
       const pos = num(op.position, 0, max);
       if (pos == null) return { ok: false, error: 'bad-position' };
       this._publishPlayback({ basePos: pos, baseTime: pb.playing ? Math.max(t, pb.baseTime) : t, stopAt: null }, id, 'seek', issuedAt);
+      if (this.bufferPause) this.bufferPause.version = this.playback.version; // still waiting on the same people
     } else {
       return { ok: false, error: 'bad-action' };
     }
@@ -275,7 +278,9 @@ class Room {
     if (!this.canControl(id) && controllerOnline) return { ok: false, error: 'not-allowed' };
     if (pb.duration && this.position() < pb.duration - 3) return { ok: false, error: 'not-at-end' };
     if (this.queue.length) {
-      const next = this.queue.shift();
+      let best = 0;
+      this.queue.forEach((q, i) => { if (q.votes.size > this.queue[best].votes.size) best = i; });
+      const [next] = this.queue.splice(best, 1);
       this.emit('queue', this.queueView());
       this.setMedia(null, next.media, { autoplay: true });
     } else {
@@ -624,7 +629,8 @@ class Room {
 
   rewindThreshold() {
     // at least two people, so one guest can't drag a small room back on their own
-    const n = this.connectedMembers().length;
+    // one vote per address, so the threshold counts addresses too (a couple on one Wi-Fi is one voice)
+    const n = new Set(this.connectedMembers().map(m => m.ip || m.id)).size;
     return Math.min(n, Math.max(2, Math.ceil(n * 0.3))) || 1;
   }
 
@@ -826,7 +832,7 @@ class Room {
     const tr = top(this.stats.reactions), tm = top(this.stats.messages);
     return {
       minutes: Math.round((this.now() - this.createdAt) / 60000),
-      people: this.members.size,
+      people: this.everJoined.size,
       topReactor: tr ? { name: name(tr[0]), count: tr[1] } : null,
       topChatter: tm ? { name: name(tm[0]), count: tm[1] } : null,
       emoji: Object.entries(this.stats.emoji).sort((a, b) => b[1] - a[1]).slice(0, 5),

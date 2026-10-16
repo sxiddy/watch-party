@@ -347,3 +347,38 @@ test('a YouTube link with a start time starts everyone there', () => {
   assert.equal(t.room.playback.media.poster, 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
   assert.equal(t.room.setMedia(t.ids[0], { kind: 'youtube', ytId: 'not an id!', title: 'x' }).error, 'bad-media');
 });
+
+// ---- things the feature audit found ----
+
+test('catalog films without a TMDB id stay separate (no tmdbId 1)', () => {
+  const t = setup(1);
+  t.room.setMedia(t.ids[0], { kind: 'file', src: 'https://e.com/s.mp4', title: 'Sintel', tmdbId: null });
+  assert.equal(t.room.playback.media.tmdbId, null);
+});
+
+test('the most-voted queue item plays next', () => {
+  const t = setup(3);
+  t.room.queueAdd(t.ids[0], { kind: 'file', src: 'https://e.com/1.mp4', title: 'One' });
+  t.room.queueAdd(t.ids[0], { kind: 'file', src: 'https://e.com/2.mp4', title: 'Two' });
+  const two = t.room.queue[1].id;
+  t.room.queueVote(t.ids[1], two);
+  t.room.queueVote(t.ids[2], two);
+  t.room.control(t.ids[0], { action: 'play' });
+  t.tick(600_000);
+  assert.ok(t.room.ended(t.ids[0], t.room.playback.itemId).ok);
+  assert.equal(t.room.playback.media.title, 'Two');
+  assert.equal(t.room.queue[0].media.title, 'One');
+});
+
+test('a seek while waiting for someone to buffer still resumes', () => {
+  const t = setup(3);
+  t.room.control(t.ids[0], { action: 'play' });
+  t.tick(9000);
+  t.room.status(t.ids[1], { buffering: true });
+  t.tick(1500);
+  assert.equal(t.room.playback.reason, 'buffering');
+  t.room.control(t.ids[0], { action: 'seek', position: 120 });
+  t.room.status(t.ids[1], { buffering: false });
+  assert.equal(t.room.playback.playing, true);
+  assert.ok(Math.abs(t.room.playback.basePos - 120) < 0.001);
+});

@@ -122,6 +122,9 @@
     $('#captions').textContent = '';
     sync.setAdapter(null);
     host.replaceChildren();
+    clearTimeout(S._bufT);
+    net.request('status', { buffering: false });
+    if (S.chat) renderChatAll(); // timestamps from the last video can't jump this one
     document.body.dataset.kind = pb.media ? pb.media.kind : 'none';
     if (!pb.media) return;
     const m = pb.media;
@@ -165,11 +168,14 @@
     $('#local-input').onchange = e => {
       const file = e.target.files[0];
       if (!file) return;
+      const sameName = file.name === m.localKey.name;
+      const sameSize = !m.localKey.size || file.size === m.localKey.size;
+      if (!(sameName && sameSize) && !confirm(`That doesn’t look like the host’s file (${!sameName ? 'different name' : 'different size'}). If it’s a different cut, scenes will be out of step. Use it anyway?`)) {
+        e.target.value = '';
+        return;
+      }
       if (S.localFile) URL.revokeObjectURL(S.localFile.url);
       S.localFile = { name: file.name, size: file.size, url: URL.createObjectURL(file) };
-      if (file.size !== m.localKey.size && m.localKey.size) {
-        toast('That file isn’t the exact same size as the host’s. It’ll still sync, but scenes may be offset if it’s a different cut.', 'warn');
-      }
       $('#local-pick').hidden = true;
       sync.setAdapter(new VideoAdapter($('#player-host'), S.localFile.url, events));
       applyVolume();
@@ -385,7 +391,7 @@
       const diff = mine - sync.expected();
       const out = $('#comp-result');
       if (Math.abs(diff) < 2) out.textContent = 'You’re bang on. Enjoy.';
-      else if (diff > 0) out.textContent = `You’re ${Math.round(diff)}s ahead. Pause for ${Math.round(diff)} seconds, then play.`;
+      else if (diff > 0) out.textContent = diff <= 30 ? `You’re ${Math.round(diff)}s ahead. Pause for ${Math.round(diff)} seconds, then play.` : `You’re ${fmt(diff)} ahead. Go back to ${fmt(sync.expected())}.`;
       else out.textContent = `You’re ${Math.round(-diff)}s behind. Skip forward ${Math.round(-diff)} seconds.`;
     };
 
@@ -1104,18 +1110,18 @@
       S.members = list;
       renderPeople();
       renderIntermission();
-      if (wasCtl !== canControl()) { renderRole(); renderQueue(); renderClips(); }
+      if (wasCtl !== canControl()) { renderRole(); renderQueue(); renderClips(); renderChatAll(); }
     });
     net.on('host', ({ hostId }) => {
       const had = isHost();
       S.hostId = hostId;
-      renderRole(); renderQueue(); renderClips();
+      renderRole(); renderQueue(); renderClips(); renderChatAll();
       if (!had && isHost()) toast('You’re the host now. You’ve got the remote.', 'good');
     });
     net.on('settings', s => {
       const ccChanged = s.captionsForAll !== S.settings.captionsForAll;
       S.settings = s;
-      renderRole(); renderQueue(); renderClips();
+      renderRole(); renderQueue(); renderClips(); renderChatAll();
       if (ccChanged) { S.ccChosen = false; autoCaptions(); toast(s.captionsForAll ? 'Subtitles are on for everyone' : 'Subtitles are up to you again'); }
     });
     net.on('queue', q => { S.queue = q; renderQueue(); });

@@ -100,6 +100,12 @@
 
   window.addEventListener('popstate', () => { if (!codeFromPath()) location.reload(); });
 
+  net.on('join-failed', err => {
+    if ($('#room').hidden || !['not-found', 'removed', 'locked'].includes(err)) return; // other errors: the next reconnect tries again
+    try { sessionStorage.removeItem('br.room'); } catch (e) { /* fine */ }
+    location.replace(err === 'not-found' ? '/?ended' : '/?removed');
+  });
+
   net.on('kicked', () => {
     try { sessionStorage.removeItem('br.room'); } catch (e) { /* fine */ }
     location.replace('/?removed');
@@ -116,7 +122,7 @@
     // the click on "Take me in" also counts as the gesture browsers need before playing sound
     askName(code).then(name => goToRoom(code, name));
   } else {
-    showLanding(/[?&]removed/.test(location.search) ? 'The host removed you from that room.' : '');
+    showLanding(/[?&]removed/.test(location.search) ? 'The host removed you from that room.' : /[?&]ended/.test(location.search) ? 'That room ended (the server restarted). Start a new one?' : '');
     if (location.search) history.replaceState(null, '', '/');
   }
 })();

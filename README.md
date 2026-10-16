@@ -4,7 +4,7 @@ A watch-party site. Make a room, send your friends the link (or let them scan th
 
 Built for the Watch Party task: synced playback for 10+ people, movie discovery, reactions, chat, a shared queue, polls, host transfer, drift correction, and solid handling of late joins, reconnects and people clicking at the same time.
 
-![status](https://img.shields.io/badge/tests-46%20passing-3fa796) ![p95](https://img.shields.io/badge/control%20p95-2%20ms%20same%20machine%20%C2%B7%2032%20ms%20sim.%20Wi--Fi-d9472b) ![drift](https://img.shields.io/badge/drift%20after%20correction-%E2%89%A4%20461%20ms-f2b33d)
+![status](https://img.shields.io/badge/tests-49%20passing-3fa796) ![p95](https://img.shields.io/badge/control%20p95-2%20ms%20same%20machine%20%C2%B7%2032%20ms%20sim.%20Wi--Fi-d9472b) ![drift](https://img.shields.io/badge/drift%20after%20correction-%E2%89%A4%20461%20ms-f2b33d)
 
 **Try it live: https://watchpartyvinnovate.vercel.app**. Open it, make a room, then open the invite link on your phone or in a second tab. It's on free hosting that sleeps when nobody's using it, so the first visit can take up to a minute to wake the server (the page tells you when that's happening).
 
@@ -20,7 +20,7 @@ Open it in two browser tabs (or two devices on the same Wi-Fi via `http://<your-
 **Optional:** copy `.env.example` to `.env` and add a free [TMDB](https://www.themoviedb.org/settings/api) key. You then get real posters, trending rows, "where is it streaming in India", trailers and smarter recommendations. Without a key it uses the ~60-movie catalog in `public/data/movies.json`, and everything still works.
 
 ```bash
-npm test           # 46 tests: room rules, permissions, sync math, fuzzy search, a 12-person integration run
+npm test           # 49 tests: room rules, permissions, sync math, fuzzy search, a 12-person integration run
 npm run bench      # propagation latency with 15 bot viewers
 npm run drift-sim  # drift correction against misbehaving fake players
 ```

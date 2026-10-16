@@ -19,6 +19,7 @@ function cleanText(s, max) {
 }
 
 function num(v, min, max, fallback = null) {
+  if (v == null || v === '') return fallback; // Number(null) is 0, which isn't a value
   const n = Number(v);
   if (!Number.isFinite(n)) return fallback;
   return Math.min(max, Math.max(min, n));
