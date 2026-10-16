@@ -45,15 +45,21 @@ function sendClip(res, { src, start, end, type, name }) {
     ff.stdout.pipe(res);
   });
   ff.on('error', e => { err += e.message; }); // e.g. the ffmpeg binary is missing
-  ff.on('close', code => {
+  ff.on('close', (code, signal) => {
     running.n--;
     clearTimeout(kill);
     if (!started && !res.headersSent) {
-      console.warn('[clip]', code, err.slice(0, 300));
+      console.warn('[clip] failed', code, signal, err.slice(0, 300));
       res.status(502).json({ error: 'Couldn’t cut that clip from the film' });
     }
   });
   res.on('close', () => ff.kill('SIGKILL')); // they gave up waiting
+}
+
+// one quick self-check at startup, so the server log says whether clips work here
+if (ffmpegPath) {
+  require('child_process').execFile(ffmpegPath, ['-version'], { timeout: 10_000 }, (e, out) =>
+    console.log('[clip] ffmpeg', e ? 'FAILED: ' + (e.signal || e.code || e.message) : 'ok: ' + String(out).split(/\r?\n/)[0]));
 }
 
 module.exports = { sendClip, available: () => !!ffmpegPath && require('fs').existsSync(ffmpegPath) };
