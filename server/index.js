@@ -124,7 +124,7 @@ app.get('/api/clip', perMinute('clip', 10, 'That’s a lot of clips, give it a m
 });
 
 app.get('/api/health', (req, res) => res.json({
-  ok: true, rooms: rooms.size, tmdb: movies.enabled(),
+  ok: true, rooms: rooms.size, tmdb: movies.enabled(), clips: clips.available(),
   people: [...rooms.values()].reduce((n, r) => n + r.connectedMembers().length, 0),
   uptime: Math.round(process.uptime()),
 }));

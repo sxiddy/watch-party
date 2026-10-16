@@ -35,13 +35,16 @@ function sendClip(res, { src, start, end, type, name }) {
   const kill = setTimeout(() => ff.kill('SIGKILL'), 60_000);
   let started = false, err = '';
   ff.stderr.on('data', d => { err += d; });
-  ff.stdout.once('data', () => {
+  // only start the reply once ffmpeg has produced something, so a failure becomes a real error
+  ff.stdout.once('data', chunk => {
     started = true;
     res.set('Content-Type', frame ? 'image/jpeg' : 'video/mp4');
     res.set('Cache-Control', 'public, max-age=86400');
     if (!frame) res.set('Content-Disposition', `attachment; filename="${String(name || 'clip').replace(/[^\w.-]+/g, '-').slice(0, 60)}.mp4"`);
+    res.write(chunk);
+    ff.stdout.pipe(res);
   });
-  ff.stdout.pipe(res);
+  ff.on('error', e => { err += e.message; }); // e.g. the ffmpeg binary is missing
   ff.on('close', code => {
     running.n--;
     clearTimeout(kill);
@@ -53,4 +56,4 @@ function sendClip(res, { src, start, end, type, name }) {
   res.on('close', () => ff.kill('SIGKILL')); // they gave up waiting
 }
 
-module.exports = { sendClip, available: () => !!ffmpegPath };
+module.exports = { sendClip, available: () => !!ffmpegPath && require('fs').existsSync(ffmpegPath) };

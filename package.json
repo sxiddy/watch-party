@@ -8,7 +8,8 @@
     "start": "node server/index.js",
     "test": "node --test \"tests/**/*.test.js\"",
     "bench": "node bench/latency.js",
-    "drift-sim": "node bench/drift-sim.js"
+    "drift-sim": "node bench/drift-sim.js",
+    "postinstall": "node scripts/get-ffmpeg.js"
   },
   "engines": {
     "node": ">=20"
