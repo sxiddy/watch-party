@@ -59,6 +59,7 @@ So for something like *Ted 2*: it's on a streaming service, so the room uses com
 - **Group-taste picks**: a "Picked for this room" row built from what the whole room liked and queued (TMDB recommendations plus genre weighting)
 - **Timestamped chat**: every message shows the video time, and clicking it jumps everyone there
 - **Highlight clips**: save the last 15 s, replay them for the room (it stops at the end of the clip), or save a ticket-stub image to share
+- **HD button**: when a sharper copy of the film exists, each person can switch to it on their own (it's about your connection, so it never changes anyone else's picture). You stay in sync while it switches, and if HD can't keep up within 15 s you're put back on the normal copy
 - **Subtitles together**: the host can turn subtitles on for everyone or drop in a `.srt` that the whole room gets; everyone else can choose their own. One caption renderer works for every player, including YouTube and companion mode
 - **Reaction heatmap** on the seek bar, so you can see where the room lost it, plus a big "3 of you at once" burst when everyone hits the same emoji
 - **Wait for buffering**: the room pauses while someone is buffering instead of leaving them behind

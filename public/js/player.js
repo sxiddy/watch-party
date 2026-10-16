@@ -46,8 +46,8 @@
     pause() { this.el.pause(); }
     seek(t) { try { this.el.currentTime = Math.max(0, t); } catch (e) { /* not seekable yet */ } }
     // last resort for a seek the browser never finishes: load the file again at t
-    reload(t) {
-      const v = this.el, src = v.currentSrc || v.src;
+    reload(t, newSrc) {
+      const v = this.el, src = newSrc || v.currentSrc || v.src;
       this.seeking = false;
       v.addEventListener('loadedmetadata', () => { try { v.currentTime = Math.max(0, t); } catch (e) { /* ignore */ } }, { once: true });
       v.src = src;

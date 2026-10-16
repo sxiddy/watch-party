@@ -204,7 +204,7 @@
 
   function mediaFrom(movie, opt) {
     return {
-      kind: opt.kind, src: opt.src, ytId: opt.ytId,
+      kind: opt.kind, src: opt.src, hd: opt.hd, ytId: opt.ytId,
       title: opt.note === 'Official trailer' ? movie.title + ' (trailer)' : movie.title,
       year: movie.year, poster: movie.poster, tmdbId: movie.tmdbId || null,
       catalogId: movie.source === 'local' ? movie.id : null, genres: movie.genres || [],

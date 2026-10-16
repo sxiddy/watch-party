@@ -139,7 +139,10 @@
       onSeekTime: s => sync.ctl.recordSeekDuration(s),
       onError: msg => { toast(msg, 'bad'); },
     };
-    if (m.kind === 'file') sync.setAdapter(new VideoAdapter(host, m.src, events));
+    $('#btn-hd').hidden = !(m.kind === 'file' && m.hd);
+    $('#btn-hd').classList.toggle('on', !!(m.hd && wantHd()));
+    if (m.kind === 'file') sync.setAdapter(new VideoAdapter(host, m.hd && wantHd() ? m.hd : m.src, events));
+    if (m.kind === 'file' && m.hd && wantHd()) armHdFallback();
     else if (m.kind === 'youtube') sync.setAdapter(new YouTubeAdapter(host, m.ytId, events));
     else if (m.kind === 'companion') { sync.setAdapter(new CompanionAdapter(sync)); showCompanion(m); }
     else if (m.kind === 'local') mountLocal(m, events);
@@ -260,7 +263,30 @@
 
   // ---------- controls ----------
 
+  // HD is per viewer: it's about your own connection, so it never affects anyone else
+  function wantHd() { try { return localStorage.getItem('br.hd') === '1'; } catch (e) { return false; } }
+  function armHdFallback() {
+    const a = sync.adapter;
+    clearTimeout(S._hdT);
+    S._hdT = setTimeout(() => {
+      if (sync.adapter === a && sync.loading && wantHd()) { toggleHd(); toast('HD was too slow on this connection, so you’re back on the normal copy', 'bad'); }
+    }, 15000);
+  }
+  function toggleHd() {
+    const m = S.playback?.media, a = sync.adapter;
+    if (!m || !m.hd || !a || a.kind !== 'video') return;
+    const on = !wantHd();
+    try { localStorage.setItem('br.hd', on ? '1' : '0'); } catch (e) { /* private mode: still switch this time */ }
+    a.reload(sync.expected(), on ? m.hd : m.src);
+    $('#btn-hd').classList.toggle('on', on);
+    toast(on ? 'HD on, loading the sharper copy…' : 'Back to the lighter copy');
+    // the HD copies are big; if yours hasn't caught up in 15 s, go back rather than leave you stuck
+    clearTimeout(S._hdT);
+    if (on) armHdFallback();
+  }
+
   function bindControls() {
+    $('#btn-hd').onclick = toggleHd;
     $('#btn-play').onclick = () => control(S.playback && S.playback.playing ? 'pause' : 'play');
     $('#btn-countdown').onclick = () => {
       if (S.playback?.playing) return toast('It’s already playing');

@@ -84,8 +84,11 @@ async function archiveFiles(best, minLen) {
     lang: /\.(es|spa)\b/i.test(f.name) ? 'es' : 'en',
     label: f.name.replace(/^.*\//, '').replace(/\.(srt|vtt)$/i, '').slice(0, 40),
   }));
+  // a sharper copy for viewers with a fast connection (the HD button)
+  const hd = mp4s.filter(f => f !== file && rank(f) < 20 && kbps(f) > kbps(file) * 1.4 && kbps(f) <= 4000 && (!f.length || seconds(f.length) >= minLen))
+    .sort((a, b) => (+b.size || 0) - (+a.size || 0))[0];
   return {
-    kind: 'file', src: dl(file.name), sourceLabel: 'Internet Archive', archiveId: best.id,
+    kind: 'file', src: dl(file.name), hd: hd ? dl(hd.name) : null, sourceLabel: 'Internet Archive', archiveId: best.id,
     duration: seconds(file.length), captions,
     note: best.note,
     page: 'https://archive.org/details/' + best.id,
@@ -100,7 +103,7 @@ async function findSources({ title, year, tmdbId, catalogId }) {
   const out = { options: [], providers: null, trailer: null, region: movies.REGION };
   const bundled = movies.localMovies.find(m => (catalogId && m.id === catalogId) || (m.src && titleSimilarity(title, m.title) > 0.9));
   if (bundled && bundled.src) {
-    out.options.push({ kind: 'file', src: bundled.src, sourceLabel: 'Free film', note: 'Openly licensed, streams instantly', captions: bundled.captions || [] });
+    out.options.push({ kind: 'file', src: bundled.src, hd: bundled.hd || null, sourceLabel: 'Free film', note: 'Openly licensed, streams instantly', captions: bundled.captions || [] });
   }
 
   const jobs = [];

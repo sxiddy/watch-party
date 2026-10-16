@@ -52,6 +52,7 @@ function cleanMedia(m) {
   if (kind === 'file') {
     if (!isHttpUrl(m.src)) return null;
     out.src = m.src;
+    if (isHttpUrl(m.hd) && trustedVideo(m.hd)) out.hd = m.hd; // sharper copy, each viewer can switch
   } else if (kind === 'youtube') {
     out.ytId = youtubeId(m.ytId || m.src);
     if (!out.ytId) return null;
