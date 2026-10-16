@@ -121,6 +121,7 @@ A second round of review found more ways one person could mess with a room, fixe
 - **A guest could set the room's p95** by reporting fake 5-second latencies, and **fake buffering could pause the room on a loop**. Both are capped now (see [docs/LATENCY.md](docs/LATENCY.md)).
 - **A seek that never finished froze that viewer for good**, while the Sync tab said they were fine. It now retries, then reloads, and shows "loading" meanwhile.
 - **Searching a director or actor** ("nolan", "tom hanks") on the live site found documentaries about them. It now finds their films.
+- **Muddy sound on the free films.** Big Buck Bunny, Sintel and Elephants Dream were playing the Internet Archive's "512Kb" copies (240p, thin audio), and the public-domain finder preferred them too. They now use proper 480–720p copies, and the speed nudging that keeps people in step moves in fixed 2 % steps instead of a new speed every quarter second, which is gentler on the audio.
 - Smaller things: subtitle files starting with a byte-order mark, old subtitles staying "on" after switching videos, and the 3·2·1 button showing with nothing loaded.
 
 ## Known limits

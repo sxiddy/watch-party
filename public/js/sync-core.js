@@ -104,8 +104,12 @@
         return { action: 'none', rate: 1, drift };
       }
       this.correcting = true;
-      const delta = Math.max(-c.MAX_RATE_DELTA, Math.min(c.MAX_RATE_DELTA, drift * c.GAIN));
-      return { action: 'rate', rate: +(1 - delta).toFixed(3), drift };
+      // Whole 2 % steps (0.94 … 0.98, 1.02 … 1.06) instead of a new speed every
+      // tick: each speed change makes the browser re-stretch the audio, and a
+      // constantly changing one sounds warbly.
+      const raw = Math.max(-c.MAX_RATE_DELTA, Math.min(c.MAX_RATE_DELTA, drift * c.GAIN));
+      const delta = Math.sign(raw) * Math.max(0.02, Math.round(Math.abs(raw) / 0.02) * 0.02);
+      return { action: 'rate', rate: +(1 - delta).toFixed(2), drift };
     }
     /** Learn how long seeks take so we can aim ahead (EMA). */
     recordSeekDuration(seconds) {

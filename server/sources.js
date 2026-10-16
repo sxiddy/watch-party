@@ -71,8 +71,11 @@ async function archiveFiles(best, minLen) {
   const mp4s = files.filter(f => /\.mp4$/i.test(f.name) && !/sample|trailer|x265|hevc|10bit/i.test(f.name)
     && (!f.length || seconds(f.length) >= minLen)); // no length listed: let the size check below decide
   if (!mp4s.length) return null;
-  // prefer the browser-friendly h.264 derivative, then the smallest reasonable file
-  mp4s.sort((a, b) => (/h\.264|512kb/i.test(b.format || b.name) - /h\.264|512kb/i.test(a.format || a.name)) || ((+a.size || 0) - (+b.size || 0)));
+  // Prefer the h.264 copy (plays everywhere) at a bitrate that streams well.
+  // The "512Kb" derivative is the last resort: 240p with thin, muddy sound.
+  const kbps = f => (+f.size || 0) * 8 / ((seconds(f.length) || 5400) * 1000);
+  const rank = f => (/512kb/i.test(f.format || f.name) ? 20 : /h\.264/i.test(f.format || '') ? 0 : 10) + (kbps(f) > 2500 ? 5 : 0);
+  mp4s.sort((a, b) => rank(a) - rank(b) || ((+a.size || 0) - (+b.size || 0)));
   const file = mp4s.find(f => seconds(f.length) >= minLen || (!f.length && (+f.size || 0) > 100e6));
   if (!file) return null;
   const dl = name => `https://archive.org/download/${encodeURIComponent(best.id)}/${name.split('/').map(encodeURIComponent).join('/')}`;
