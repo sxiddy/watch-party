@@ -52,7 +52,10 @@ async function go(type) {
 (async () => {
   [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const site = siteName(tab && tab.url);
-  $('site').textContent = site ? 'This tab: ' + site : 'This tab has no known streaming site, but any page with a video works.';
+  // the store version may only see Netflix, Prime Video, JioHotstar and YouTube tabs, so other tabs have no address here
+  $('site').textContent = site ? 'This tab: ' + site
+    : tab && tab.url ? 'This tab has no known streaming site, but any page with a video works.'
+    : 'Open Netflix, Prime Video, JioHotstar or YouTube in this tab first.';
   $('name').value = localStorage.getItem('br.name') || '';
   render(await send({ type: 'get' }));
   $('start').onclick = () => go('start');
