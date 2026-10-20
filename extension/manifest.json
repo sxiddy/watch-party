@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Back Row Sync",
+  "version": "1.0.0",
+  "description": "Watch Netflix, Prime Video, Hotstar or YouTube in sync with your Back Row room. Everyone plays it on their own account.",
+  "minimum_chrome_version": "116",
+  "permissions": ["storage", "scripting", "tabs", "alarms"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "Back Row Sync" }
+}

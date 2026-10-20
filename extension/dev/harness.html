@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Back Row Sync test page</title>
+<style>body{margin:0;background:#111;color:#eee;font:14px system-ui}video{width:960px;display:block;margin:20px auto}p{text-align:center}</style></head>
+<body>
+<!-- Test page for content.js without installing the extension: a stand-in
+     for the extension's background (one socket to a local Back Row server)
+     drives the real content.js on a real <video>.
+     Open: harness.html?code=ROOM&name=Ann&host=1  (host=1 starts the room's film) -->
+<p id="info">loading…</p>
+<video id="v" controls muted src="https://archive.org/download/big-buck-bunny_202604/Big%20Buck%20Bunny.ia.mp4"></video>
+<script src="../lib/socket.io-4.8.min.js"></script>
+<script src="../lib/sync-core.js"></script>
+<script>
+(async function () {
+  const q = new URLSearchParams(location.search);
+  const API = q.get('server') || 'http://localhost:3000';
+  const clock = new SyncCore.ClockSync({ maxSamples: 12 });
+  const socket = io(API, { transports: ['websocket'] });
+  const st = { pb: null, members: [], hostId: null, you: null, settings: {} };
+  let port = null;
+  const ack = (e, p) => new Promise(r => socket.emit(e, p, r));
+  const push = () => port && port._in({ type: 'state', playback: st.pb, offset: clock.offset, canControl: st.you === st.hostId || st.settings.controlMode === 'everyone', code: q.get('code'), watching: st.members.filter(m => m.connected !== false).length, conn: socket.connected ? 'connected' : 'reconnecting' });
+  // the fake chrome.runtime.connect content.js uses
+  window.chrome = { runtime: { connect() {
+    const ls = [];
+    port = { _in: m => ls.forEach(f => f(m)), onMessage: { addListener: f => ls.push(f) }, onDisconnect: { addListener() {} }, disconnect() {},
+      async postMessage(m) {
+        if (m.type === 'hello') push();
+        if (m.type === 'control') { const r = await ack('control', { ...m.op, baseVersion: st.pb ? st.pb.version : 0, issuedAt: Date.now() + clock.offset }); window.__lastControl = r; }
+        if (m.type === 'status') socket.emit('status', { buffering: m.buffering, drift: m.drift }, () => {});
+      } };
+    return port;
+  } } };
+  socket.on('playback', p => { st.pb = p; push(); });
+  socket.on('members', m => { st.members = m; push(); });
+  socket.on('host', h => { st.hostId = h.hostId; push(); });
+  socket.on('settings', s => { st.settings = s; push(); });
+  await new Promise(r => socket.on('connect', r));
+  for (let i = 0; i < 6; i++) { const t0 = Date.now(); await new Promise(r => socket.emit('tp', ts => { clock.addSample(t0, ts, Date.now()); r(); })); }
+  const id = (sessionStorage.br || (sessionStorage.br = Math.random().toString(36).slice(2).padEnd(20, 'x')));
+  const res = await ack('join', { code: q.get('code'), name: q.get('name') || 'Tester', clientId: id });
+  Object.assign(st, { pb: res.snapshot.playback, members: res.snapshot.members, hostId: res.snapshot.hostId, you: res.snapshot.you, settings: res.snapshot.settings });
+  if (q.get('host')) { await ack('media:set', { media: { kind: 'companion', title: 'Big Buck Bunny', sourceLabel: 'Test page' } }); await ack('settings', { controlMode: 'everyone' }); }
+  document.getElementById('info').textContent = 'room ' + q.get('code') + ' as ' + (q.get('name') || 'Tester');
+  window.__st = st; window.__clock = clock;
+  const s = document.createElement('script'); s.src = '../content.js'; document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>

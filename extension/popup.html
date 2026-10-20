@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Back Row Sync</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <span class="mark">Back Row</span>
+    <span class="sub">Sync</span>
+  </header>
+
+  <section id="setup">
+    <p class="lead">Watch on your own Netflix, Prime, Hotstar or YouTube. Back Row keeps everyone's video in step.</p>
+    <p class="site" id="site"></p>
+    <label>Your name <input id="name" maxlength="24" placeholder="e.g. Radha"></label>
+    <label>Server
+      <select id="server">
+        <option value="live">Live (watchpartyvinnovate)</option>
+        <option value="local">This laptop (localhost:3000)</option>
+      </select>
+    </label>
+    <button id="start" class="primary">Start a party on this tab</button>
+    <label class="check"><input type="checkbox" id="everyone"> Let everyone control playback</label>
+    <div class="or"><span>or join one</span></div>
+    <div class="row">
+      <input id="code" maxlength="8" placeholder="Room code" autocapitalize="characters">
+      <button id="join">Join</button>
+    </div>
+  </section>
+
+  <section id="room" hidden>
+    <p class="label">Room</p>
+    <p class="code" id="r-code"></p>
+    <p class="title" id="r-title"></p>
+    <div class="row">
+      <button id="copy">Copy invite link</button>
+      <button id="open">Open room</button>
+    </div>
+    <p class="label">Watching <span id="r-count"></span></p>
+    <ul id="r-members"></ul>
+    <label class="check" id="r-everyone-wrap" hidden><input type="checkbox" id="r-everyone"> Let everyone control playback</label>
+    <p class="meta" id="r-meta"></p>
+    <button id="leave" class="ghost">Leave</button>
+  </section>
+
+  <p class="err" id="err" hidden></p>
+  <script src="popup.js"></script>
+</body>
+</html>
